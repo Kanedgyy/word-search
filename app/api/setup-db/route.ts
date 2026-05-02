@@ -7,7 +7,7 @@ export async function GET() {
     // Создаём таблицы если не существуют
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS game_sessions (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         word_list text[] NOT NULL,
         grid jsonb NOT NULL,
         game_mode varchar(20) NOT NULL DEFAULT 'individual',
@@ -21,7 +21,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         name text NOT NULL,
         email text NOT NULL UNIQUE,
         created_at timestamp NOT NULL DEFAULT now()
@@ -30,7 +30,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS game_players (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
         name text NOT NULL,
@@ -46,7 +46,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS found_words (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         player_id uuid NOT NULL REFERENCES game_players(id) ON DELETE CASCADE,
         word text NOT NULL,
@@ -62,7 +62,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS match_history (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
         player_name text NOT NULL,
