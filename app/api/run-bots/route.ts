@@ -39,6 +39,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+      } catch (err) {
+        console.error('[after] Ошибка запуска ботов:', err);
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Боты запущены в фоне' });
+  } catch (error: any) {
+    console.error('Run bots error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 
     for (const bot of bots) {
       const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
