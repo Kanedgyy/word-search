@@ -42,6 +42,8 @@ export const gamePlayers = pgTable('game_players', {
   firstWordTime: integer('first_word_time'),
   // Команда игрока (null = индивидуальный режим)
   team: varchar('team', { enum: ['red', 'blue', 'green', 'yellow'] }),
+  // Сложность бота
+  difficulty: varchar('difficulty', { enum: ['easy', 'medium', 'hard'] }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

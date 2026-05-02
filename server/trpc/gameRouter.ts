@@ -13,7 +13,7 @@ import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordByPath } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and } from 'drizzle-orm';
-import { GameBot, BotFactory, botRegistry } from '../../server/bot';
+import { GameBot, BotFactory } from '../../server/bot';
 
 // Типы для игроков и сессий
 interface Player {
@@ -162,8 +162,7 @@ const startGame = publicProcedure
     // Запускаем ботов (без await, чтобы не блокировать ответ)
     const bots = players.filter(p => p.isBot);
     for (const bot of bots) {
-      const registryEntry = botRegistry.get(bot.id);
-      const difficulty = registryEntry?.difficulty || 'medium';
+      const difficulty = bot.difficulty || 'medium';
       const gameBot = BotFactory.createBot(input.sessionId, bot.id, difficulty);
       gameBot.startFindingWords().catch(err => {
         console.error(`Ошибка бота ${bot.id}:`, err);
@@ -532,10 +531,8 @@ const addBot = publicProcedure
       turnOrder: currentPlayers.length + 1,
       status: 'joined',
       team: input.team ?? null,
+      difficulty: input.difficulty,
     }).returning();
-    
-    // Сохраняем сложность бота в реестре
-    botRegistry.set(bot.id, { difficulty: input.difficulty });
     
     return {
       playerId: bot.id,

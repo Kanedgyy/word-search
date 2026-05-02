@@ -44,6 +44,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 /**
  * Реестр ботов — хранит настройки до запуска игры
+ * @deprecated Устарело — сложность теперь хранится в БД
  */
 export const botRegistry = new Map<string, { difficulty: 'easy' | 'medium' | 'hard' }>();
 
@@ -356,25 +357,25 @@ export class BotFactory {
   ): GameBot {
     const configs = {
       easy: {
-        minDelay: 8000,      // 8 секунд минимум
-        maxDelay: 20000,     // 20 секунд максимум
-        accuracy: 0.35,      // 35% точность — часто ошибается
+        minDelay: 6000,      // 6 секунд минимум
+        maxDelay: 15000,     // 15 секунд максимум
+        accuracy: 0.45,      // 45% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.4,     // 40% шанс "зависнуть" на ход
+        skipChance: 0.3,     // 30% шанс "зависнуть"
       },
       medium: {
-        minDelay: 5000,      // 5 секунд
-        maxDelay: 12000,     // 12 секунд
-        accuracy: 0.55,      // 55% точность
+        minDelay: 4000,      // 4 секунды
+        maxDelay: 10000,     // 10 секунд
+        accuracy: 0.65,      // 65% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.25,    // 25% шанс пропустить ход
+        skipChance: 0.2,     // 20% шанс пропустить ход
       },
       hard: {
-        minDelay: 3000,      // 3 секунды
-        maxDelay: 7000,      // 7 секунд
-        accuracy: 0.7,       // 70% точность
+        minDelay: 2000,      // 2 секунды
+        maxDelay: 6000,      // 6 секунд
+        accuracy: 0.8,       // 80% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.15,    // 15% шанс пропустить ход
+        skipChance: 0.1,     // 10% шанс пропустить ход
       },
     };
 

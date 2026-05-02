@@ -43,9 +43,13 @@ export async function GET() {
         status varchar(20) NOT NULL DEFAULT 'joined',
         first_word_time integer,
         team varchar(20),
+        difficulty varchar(20),
         created_at timestamp NOT NULL DEFAULT now()
       );
     `);
+
+    -- Добавляем колонку difficulty если таблица уже существует (для обновления)
+    await client.unsafe(`ALTER TABLE game_players ADD COLUMN IF NOT EXISTS difficulty varchar(20);`);
 
     await client.unsafe(`
       CREATE TABLE IF NOT EXISTS found_words (
