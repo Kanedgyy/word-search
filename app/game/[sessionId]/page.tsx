@@ -97,6 +97,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const startGameMutation = trpc.game.startGame.useMutation();
   const addBotMutation = trpc.game.addBot.useMutation();
   const setTeamMutation = trpc.game.setTeam.useMutation();
+  const rematchMutation = trpc.game.rematch.useMutation({
+    onSuccess: (data) => {
+      const oldPlayerId = localStorage.getItem('playerId');
+      const mapping = data.playerMap.find((p: { oldId: string; newId: string }) => p.oldId === oldPlayerId);
+      if (mapping) {
+        localStorage.setItem('playerId', mapping.newId);
+      }
+      router.push(`/game/${data.sessionId}`);
+    },
+  });
 
   // Проверка новых найденных слов для уведомления
   useEffect(() => {
@@ -497,7 +507,14 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 ))}
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center flex flex-wrap gap-4 justify-center">
+              <button
+                onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                disabled={rematchMutation.isPending}
+                className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {rematchMutation.isPending ? '⏳ Создание...' : '🔄 Реванш!'}
+              </button>
               <button
                 onClick={() => router.push('/')}
                 className="px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"

@@ -58,7 +58,7 @@ const createSession = publicProcedure
     gameMode: z.enum(['individual', 'team']).default('individual'),
   }))
   .mutation(async ({ ctx, input }) => {
-    const wordList = getRandomWordSubset(10);
+    const wordList = getRandomWordSubset(12);
     const { grid, placedWords } = generateWordSearch(wordList);
 
     const [session] = await ctx.db.insert(gameSessions).values({
@@ -536,6 +536,70 @@ const addBot = publicProcedure
     };
   });
 
+/**
+ * Создаёт реванш — новую сессию с теми же игроками
+ */
+const rematch = publicProcedure
+  .input(z.object({
+    sessionId: z.string(),
+    playerId: z.string(), // ID игрока, запросившего реванш
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const oldSession = await ctx.db.query.gameSessions.findFirst({
+      where: eq(gameSessions.id, input.sessionId),
+    });
+    
+    if (!oldSession) {
+      throw new Error('Сессия не найдена');
+    }
+    
+    // Получаем всех игроков старой сессии (только реальных, не ботов)
+    const oldPlayers = await ctx.db.select().from(gamePlayers).where(
+      eq(gamePlayers.sessionId, input.sessionId)
+    );
+    
+    const realPlayers = oldPlayers.filter(p => !p.isBot);
+    
+    // Создаём новую сессию
+    const wordList = getRandomWordSubset(12);
+    const { grid, placedWords } = generateWordSearch(wordList);
+    
+    const [newSession] = await ctx.db.insert(gameSessions).values({
+      wordList: placedWords,
+      grid: grid,
+      status: 'waiting',
+      maxPlayers: oldSession.maxPlayers,
+      duration: oldSession.duration,
+      gameMode: oldSession.gameMode,
+    }).returning();
+    
+    // Добавляем тех же игроков в новую сессию
+    const newPlayerIds: Array<{ oldId: string; newId: string }> = [];
+    for (let i = 0; i < realPlayers.length; i++) {
+      const oldPlayer = realPlayers[i];
+      const [newPlayer] = await ctx.db.insert(gamePlayers).values({
+        sessionId: newSession.id,
+        name: oldPlayer.name,
+        isBot: false,
+        color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+        turnOrder: i + 1,
+        status: 'joined',
+        team: oldPlayer.team,
+      }).returning();
+      
+      newPlayerIds.push({ oldId: oldPlayer.id, newId: newPlayer.id });
+    }
+    
+    return {
+      success: true,
+      sessionId: newSession.id,
+      grid,
+      wordList: placedWords,
+      playerMap: newPlayerIds, // Старый ID → Новый ID
+      gameMode: oldSession.gameMode,
+    };
+  });
+
 // Экспортируем router
 export const gameRouter = createTRPCRouter({
   createSession,
@@ -545,6 +609,7 @@ export const gameRouter = createTRPCRouter({
   getSessionState,
   addBot,
   setTeam,
+  rematch,
 });
 
 export type GameRouter = typeof gameRouter;
