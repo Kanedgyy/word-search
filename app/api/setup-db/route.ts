@@ -88,5 +88,3 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-
-https://word-search-13d0c7mdt-kanedgyys-projects.vercel.app/api/setup-db

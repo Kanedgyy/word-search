@@ -149,6 +149,12 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const handleStartGame = async () => {
     try {
       await startGameMutation.mutateAsync({ sessionId });
+      // Запускаем ботов через Edge API route (фоновые задачи)
+      fetch('/api/run-bots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      }).catch(err => console.error('Ошибка запуска ботов:', err));
       setMessage('Игра началась!');
     } catch (err: any) {
       console.error('Ошибка запуска игры:', err);

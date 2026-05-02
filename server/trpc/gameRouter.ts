@@ -13,7 +13,7 @@ import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordByPath } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and } from 'drizzle-orm';
-import { GameBot, BotFactory } from '../../server/bot';
+import { GameBot } from '../../server/bot';
 
 // Типы для игроков и сессий
 interface Player {
@@ -159,16 +159,9 @@ const startGame = publicProcedure
       })
       .where(eq(gameSessions.id, input.sessionId));
     
-    // Запускаем ботов (без await, чтобы не блокировать ответ)
-    const bots = players.filter(p => p.isBot);
-    for (const bot of bots) {
-      const difficulty = bot.difficulty || 'medium';
-      const gameBot = BotFactory.createBot(input.sessionId, bot.id, difficulty);
-      gameBot.startFindingWords().catch(err => {
-        console.error(`Ошибка бота ${bot.id}:`, err);
-      });
-    }
-    
+    // Боты запускаются через отдельный Edge API route /api/run-bots
+    // чтобы работать в serverless-окружении Vercel
+
     return {
       message: 'Игра началась!',
       grid: session.grid,
