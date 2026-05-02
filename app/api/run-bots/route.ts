@@ -1,28 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { db } from '../../../lib/db';
 import { gamePlayers } from '../../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { BotFactory } from '../../../server/bot';
 
-// Edge Runtime — поддерживает waitUntil для фоновых задач
-export const runtime = 'edge';
+// Node.js runtime — поддерживает TCP-соединения с PostgreSQL
 export const dynamic = 'force-dynamic';
-
-declare const waitUntil: ((promise: Promise<any>) => void) | undefined;
 
 export async function POST(request: NextRequest) {
   try {
     const { sessionId } = await request.json();
     
-    // Находим ботов в сессии
-    const bots = await db.select().from(gamePlayers).where(
-      and(eq(gamePlayers.sessionId, sessionId), eq(gamePlayers.isBot, true))
-    );
+    // Запускаем ботов в фоне ПОСЛЕ отправки ответа
+    after(async () => {
+      try {
+        const bots = await db.select().from(gamePlayers).where(
+          and(eq(gamePlayers.sessionId, sessionId), eq(gamePlayers.isBot, true))
+        );
+        
+        console.log(`[after] Запуск ${bots.length} ботов для сессии ${sessionId}`);
+        
+        for (const bot of bots) {
+          const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
+          const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
+          gameBot.startFindingWords().catch(err => {
+            console.error(`[after] Ошибка бота ${bot.id}:`, err);
+          });
+        }
+      } catch (err) {
+        console.error('[after] Ошибка запуска ботов:', err);
+      }
+    });
     
-    if (bots.length === 0) {
-      return NextResponse.json({ success: true, botsStarted: 0 });
-    }
-    
+    return NextResponse.json({ success: true, message: 'Боты запущены в фоне' });
+  } catch (error: any) {
+    console.error('Run bots error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
     for (const bot of bots) {
       const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
       const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
