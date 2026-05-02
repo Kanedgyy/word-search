@@ -326,3 +326,5 @@ npm run test:watch
 ## 📄 Лицензия
 
 MIT
+#   w o r d - s e a r c h  
+ 
