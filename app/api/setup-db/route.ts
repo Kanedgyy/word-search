@@ -4,9 +4,6 @@ import { sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Включаем расширение для UUID (uuid-ossp вместо pgcrypto — работает в Railway)
-    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
-
     // Удаляем старые таблицы если есть (чистый сетап)
     await db.execute(sql`DROP TABLE IF EXISTS found_words CASCADE;`);
     await db.execute(sql`DROP TABLE IF EXISTS game_players CASCADE;`);
@@ -17,7 +14,7 @@ export async function GET() {
     // Создаём таблицы точно как в Drizzle схеме
     await db.execute(sql`
       CREATE TABLE game_sessions (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         word_list text[] NOT NULL,
         grid jsonb NOT NULL,
         game_mode varchar(20) NOT NULL DEFAULT 'individual',
@@ -31,7 +28,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE users (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         name text NOT NULL,
         email text NOT NULL UNIQUE,
         created_at timestamp NOT NULL DEFAULT now()
@@ -40,7 +37,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE game_players (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
         name text NOT NULL,
@@ -56,7 +53,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE found_words (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         player_id uuid NOT NULL REFERENCES game_players(id) ON DELETE CASCADE,
         word text NOT NULL,
@@ -72,7 +69,7 @@ export async function GET() {
 
     await db.execute(sql`
       CREATE TABLE match_history (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
         player_name text NOT NULL,
