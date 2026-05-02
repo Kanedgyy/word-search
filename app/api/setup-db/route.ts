@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/db';
-import { sql } from 'drizzle-orm';
+import postgres from 'postgres';
 
 export async function GET() {
+  // Подключаемся напрямую через postgres (без drizzle wrapper)
+  const connectionString = process.env.DATABASE_URL!;
+  const client = postgres(connectionString, { ssl: 'require' });
+
   try {
-    // Создаём таблицы если не существуют
-    await db.execute(sql`
+    // Создаём таблицы через прямой SQL
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS game_sessions (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         word_list text[] NOT NULL,
@@ -19,7 +22,7 @@ export async function GET() {
       );
     `);
 
-    await db.execute(sql`
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS users (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         name text NOT NULL,
@@ -28,7 +31,7 @@ export async function GET() {
       );
     `);
 
-    await db.execute(sql`
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS game_players (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
@@ -44,7 +47,7 @@ export async function GET() {
       );
     `);
 
-    await db.execute(sql`
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS found_words (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
@@ -60,7 +63,7 @@ export async function GET() {
       );
     `);
 
-    await db.execute(sql`
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS match_history (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
@@ -73,9 +76,12 @@ export async function GET() {
       );
     `);
 
+    await client.end();
     return NextResponse.json({ success: true, message: 'Таблицы созданы!' });
   } catch (error: any) {
+    await client.end();
     console.error('Setup error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
 }
