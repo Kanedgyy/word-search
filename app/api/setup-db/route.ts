@@ -4,16 +4,9 @@ import { sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Удаляем старые таблицы если есть (чистый сетап)
-    await db.execute(sql`DROP TABLE IF EXISTS found_words CASCADE;`);
-    await db.execute(sql`DROP TABLE IF EXISTS game_players CASCADE;`);
-    await db.execute(sql`DROP TABLE IF EXISTS match_history CASCADE;`);
-    await db.execute(sql`DROP TABLE IF EXISTS game_sessions CASCADE;`);
-    await db.execute(sql`DROP TABLE IF EXISTS users CASCADE;`);
-
-    // Создаём таблицы точно как в Drizzle схеме
+    // Создаём таблицы если не существуют
     await db.execute(sql`
-      CREATE TABLE game_sessions (
+      CREATE TABLE IF NOT EXISTS game_sessions (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         word_list text[] NOT NULL,
         grid jsonb NOT NULL,
@@ -27,7 +20,7 @@ export async function GET() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         name text NOT NULL,
         email text NOT NULL UNIQUE,
@@ -36,7 +29,7 @@ export async function GET() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE game_players (
+      CREATE TABLE IF NOT EXISTS game_players (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -52,7 +45,7 @@ export async function GET() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE found_words (
+      CREATE TABLE IF NOT EXISTS found_words (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         player_id uuid NOT NULL REFERENCES game_players(id) ON DELETE CASCADE,
@@ -68,7 +61,7 @@ export async function GET() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE match_history (
+      CREATE TABLE IF NOT EXISTS match_history (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
