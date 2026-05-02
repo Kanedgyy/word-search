@@ -1,0 +1,91 @@
+import { NextResponse } from 'next/server';
+import { db } from '../../../lib/db';
+import { sql } from 'drizzle-orm';
+
+export async function GET() {
+  try {
+    // Включаем расширение для UUID
+    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
+
+    // Удаляем старые таблицы если есть (чистый сетап)
+    await db.execute(sql`DROP TABLE IF EXISTS found_words CASCADE;`);
+    await db.execute(sql`DROP TABLE IF EXISTS game_players CASCADE;`);
+    await db.execute(sql`DROP TABLE IF EXISTS match_history CASCADE;`);
+    await db.execute(sql`DROP TABLE IF EXISTS game_sessions CASCADE;`);
+    await db.execute(sql`DROP TABLE IF EXISTS users CASCADE;`);
+
+    // Создаём таблицы точно как в Drizzle схеме
+    await db.execute(sql`
+      CREATE TABLE game_sessions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        word_list text[] NOT NULL,
+        grid jsonb NOT NULL,
+        game_mode varchar(20) NOT NULL DEFAULT 'individual',
+        status varchar(20) NOT NULL DEFAULT 'waiting',
+        max_players integer NOT NULL DEFAULT 6,
+        duration integer NOT NULL DEFAULT 300,
+        created_at timestamp NOT NULL DEFAULT now(),
+        ends_at timestamp
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE users (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        email text NOT NULL UNIQUE,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE game_players (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        name text NOT NULL,
+        is_bot boolean NOT NULL DEFAULT false,
+        color text NOT NULL,
+        turn_order integer NOT NULL,
+        status varchar(20) NOT NULL DEFAULT 'joined',
+        first_word_time integer,
+        team varchar(20),
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE found_words (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+        player_id uuid NOT NULL REFERENCES game_players(id) ON DELETE CASCADE,
+        word text NOT NULL,
+        start_row integer NOT NULL,
+        start_col integer NOT NULL,
+        end_row integer NOT NULL,
+        end_col integer NOT NULL,
+        direction varchar(20) NOT NULL,
+        path jsonb,
+        found_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE match_history (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id uuid NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        player_name text NOT NULL,
+        words_found integer NOT NULL DEFAULT 0,
+        first_word_time integer,
+        rank integer,
+        recorded_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    return NextResponse.json({ success: true, message: 'Таблицы созданы!' });
+  } catch (error: any) {
+    console.error('Setup error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
