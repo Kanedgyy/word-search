@@ -57,14 +57,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const playerName = searchParams.get('name') || localStorage.getItem('playerName') || 'Игрок';
   const playerColor = searchParams.get('color') || localStorage.getItem('playerColor') || '#4ECDC4';
 
-  // Сохраняем данные в localStorage при первом входе
+  // Сохраняем данные в localStorage при монтировании и при смене сессии
   useEffect(() => {
-    if (searchParams.get('playerId')) {
-      localStorage.setItem('playerId', searchParams.get('playerId')!);
+    const pid = searchParams.get('playerId');
+    if (pid) {
+      localStorage.setItem('playerId', pid);
       localStorage.setItem('playerName', searchParams.get('name') || 'Игрок');
       localStorage.setItem('playerColor', searchParams.get('color') || '#4ECDC4');
     }
-  }, [searchParams]);
+  }, [sessionId]);
 
   // Используем tRPC для запросов
   const { 
@@ -75,7 +76,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     { sessionId, playerId },
     { 
       refetchInterval: 2000, // Polling каждые 2 секунды
-      enabled: !!sessionId && !!playerId,
+      enabled: !!sessionId,  // Запускаем даже без playerId — сервер вернёт данные
+      staleTime: 0,          // Всегда свежие данные
     }
   );
 
