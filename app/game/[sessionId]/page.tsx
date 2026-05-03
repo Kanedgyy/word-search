@@ -111,11 +111,19 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const setTeamMutation = trpc.game.setTeam.useMutation();
   const joinSessionMutation = trpc.game.joinSession.useMutation();
   const rematchMutation = trpc.game.rematch.useMutation({
-    onSuccess: (data) => {
-      // Хост сразу переходит в новую сессию
-      const name = localStorage.getItem('playerName') || 'Игрок';
-      const color = localStorage.getItem('playerColor') || '#4ECDC4';
-      router.push(`/game/${data.sessionId}?playerId=${playerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
+    onSuccess: async (data) => {
+      // Хост должен сам присоединиться к новой сессии
+      try {
+        const joinData = await joinSessionMutation.mutateAsync({
+          sessionId: data.sessionId,
+          playerName: localStorage.getItem('playerName') || 'Игрок',
+        });
+        const name = localStorage.getItem('playerName') || 'Игрок';
+        const color = localStorage.getItem('playerColor') || '#4ECDC4';
+        router.push(`/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
+      } catch (err: any) {
+        setMessage('Ошибка перехода в реванш: ' + err.message);
+      }
     },
   });
 
