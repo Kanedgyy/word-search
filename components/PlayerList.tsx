@@ -25,6 +25,7 @@ interface PlayerListProps {
   showTeams?: boolean;
   isHost?: boolean;
   onSetTeam?: (playerId: string, team: string) => void;
+  onRemovePlayer?: (playerId: string) => void;
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -41,7 +42,7 @@ const TEAM_NAMES: Record<string, string> = {
   yellow: '🟡',
 };
 
-export function PlayerList({ players, currentPlayerId, title = 'Игроки:', showTeams = false, isHost = false, onSetTeam }: PlayerListProps) {
+export function PlayerList({ players, currentPlayerId, title = 'Игроки:', showTeams = false, isHost = false, onSetTeam, onRemovePlayer }: PlayerListProps) {
   // Сортируем игроков по количеству слов
   const sortedPlayers = [...players].sort((a, b) => b.wordsFound - a.wordsFound);
 
@@ -64,7 +65,6 @@ export function PlayerList({ players, currentPlayerId, title = 'Игроки:', 
               key={player.id}
               className={`
                 flex items-center justify-between p-3 rounded-lg
-                transition-all duration-200
                 ${isCurrentPlayer ? 'ring-2 ring-blue-400' : ''}
               `}
               style={{ 
@@ -72,7 +72,7 @@ export function PlayerList({ players, currentPlayerId, title = 'Игроки:', 
                 borderLeft: `4px solid ${player.color}`
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1">
                 {/* Индикатор ранга */}
                 {player.rank && (
                   <div className="w-6 h-6 flex items-center justify-center rounded-full bg-yellow-400 text-white text-sm font-bold">
@@ -89,7 +89,7 @@ export function PlayerList({ players, currentPlayerId, title = 'Игроки:', 
                 </div>
                 
                 {/* Имя и статус */}
-                <div>
+                <div className="flex-1">
                   <div className="font-medium text-gray-800">
                     {player.name}
                     {player.isBot && (
@@ -124,9 +124,26 @@ export function PlayerList({ players, currentPlayerId, title = 'Игроки:', 
                 </div>
               </div>
               
-              {/* Счёт */}
-              <div className="text-xl font-bold text-gray-800">
-                {player.wordsFound}
+              {/* Счёт и кнопки */}
+              <div className="flex items-center gap-3">
+                <div className="text-xl font-bold text-gray-800">
+                  {player.wordsFound}
+                </div>
+                
+                {/* Кнопка удаления (только для хоста, не для себя) */}
+                {isHost && !isCurrentPlayer && onRemovePlayer && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`Удалить ${player.name}?`)) {
+                        onRemovePlayer(player.id);
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all"
+                    title="Удалить игрока"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           );

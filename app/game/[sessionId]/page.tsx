@@ -110,6 +110,12 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const addBotMutation = trpc.game.addBot.useMutation();
   const setTeamMutation = trpc.game.setTeam.useMutation();
   const joinSessionMutation = trpc.game.joinSession.useMutation();
+  const removePlayerMutation = trpc.game.removePlayer.useMutation({
+    onSuccess: () => {
+      setMessage('Игрок удалён');
+      void refetch();
+    },
+  });
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: async (data) => {
       // Хост должен сам присоединиться к новой сессии
@@ -147,6 +153,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     } catch (err: any) {
       setMessage('Ошибка присоединения к реваншу: ' + err.message);
     }
+  };
+
+  // Удаление игрока
+  const handleRemovePlayer = (targetPlayerId: string) => {
+    removePlayerMutation.mutate({ sessionId, playerId, targetPlayerId });
   };
 
   // Проверка новых найденных слов для уведомления
@@ -520,6 +531,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               showTeams={gameState.gameMode === 'team'}
               isHost={isHost}
               onSetTeam={(botId, team) => setTeamMutation.mutate({ sessionId, playerId: botId, team: team as any })}
+              onRemovePlayer={handleRemovePlayer}
             />
 
             {/* Список слов (скрываем в реальной игре, но показываем для теста) */}

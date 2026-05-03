@@ -548,75 +548,108 @@ const addBot = publicProcedure
     };
   });
 
-/**
- * Создаёт реванш — новую сессию с теми же игроками
- */
-const rematch = publicProcedure
-  .input(z.object({
-    sessionId: z.string(),
-    playerId: z.string(), // ID игрока, запросившего реванш
-  }))
-  .mutation(async ({ ctx, input }) => {
-    const oldSession = await ctx.db.query.gameSessions.findFirst({
-      where: eq(gameSessions.id, input.sessionId),
+  /**
+   * Создаёт реванш — новую сессию с теми же игроками
+   */
+  const rematch = publicProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      playerId: z.string(), // ID игрока, запросившего реванш
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const oldSession = await ctx.db.query.gameSessions.findFirst({
+        where: eq(gameSessions.id, input.sessionId),
+      });
+      
+      if (!oldSession) {
+        throw new Error('Сессия не найдена');
+      }
+      
+      // Создаём новую сессию
+      const wordList = getRandomWordSubset(12);
+      const { grid, placedWords } = generateWordSearch(wordList);
+      
+      const [newSession] = await ctx.db.insert(gameSessions).values({
+        wordList: placedWords,
+        grid: grid,
+        status: 'waiting',
+        maxPlayers: oldSession.maxPlayers,
+        duration: oldSession.duration,
+        gameMode: oldSession.gameMode,
+      }).returning();
+      
+      // Записываем ссылку на реванш в старую сессию
+      await ctx.db.update(gameSessions)
+        .set({ rematchSessionId: newSession.id })
+        .where(eq(gameSessions.id, input.sessionId));
+      
+      // Возвращаем только ID новой сессии (игроки добавятся через joinSession)
+      return {
+        success: true,
+        sessionId: newSession.id,
+        grid,
+        wordList: placedWords,
+        gameMode: oldSession.gameMode,
+      };
     });
-    
-    if (!oldSession) {
-      throw new Error('Сессия не найдена');
-    }
-    
-    // Получаем всех игроков старой сессии (только реальных, не ботов)
-    const oldPlayers = await ctx.db.select().from(gamePlayers).where(
-      eq(gamePlayers.sessionId, input.sessionId)
-    );
-    
-    const realPlayers = oldPlayers.filter(p => !p.isBot);
-    
-    // Перемещаем игрока, нажавшего реванш, на первое место (хост)
-    const requesterIndex = realPlayers.findIndex(p => p.id === input.playerId);
-    if (requesterIndex > 0) {
-      const [requester] = realPlayers.splice(requesterIndex, 1);
-      realPlayers.unshift(requester);
-    }
-    
-    // Создаём новую сессию
-    const wordList = getRandomWordSubset(12);
-    const { grid, placedWords } = generateWordSearch(wordList);
-    
-    const [newSession] = await ctx.db.insert(gameSessions).values({
-      wordList: placedWords,
-      grid: grid,
-      status: 'waiting',
-      maxPlayers: oldSession.maxPlayers,
-      duration: oldSession.duration,
-      gameMode: oldSession.gameMode,
-    }).returning();
-    
-    // Записываем ссылку на реванш в старую сессию
-    await ctx.db.update(gameSessions)
-      .set({ rematchSessionId: newSession.id })
-      .where(eq(gameSessions.id, input.sessionId));
-    
-    // Возвращаем только ID новой сессии (игроки добавятся через joinSession)
-    return {
-      success: true,
-      sessionId: newSession.id,
-      grid,
-      wordList: placedWords,
-      gameMode: oldSession.gameMode,
-    };
+
+  /**
+   * Удаляет игрока из сессии (только хост)
+   */
+  const removePlayer = publicProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      playerId: z.string(),
+      targetPlayerId: z.string(), // Игрок которого удаляем
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Проверяем что запрашивающий — хост
+      const hostPlayer = await ctx.db.query.gamePlayers.findFirst({
+        where: and(
+          eq(gamePlayers.sessionId, input.sessionId),
+          eq(gamePlayers.id, input.playerId)
+        ),
+        orderBy: asc(gamePlayers.turnOrder)
+      });
+      
+      if (!hostPlayer || hostPlayer.turnOrder !== 1) {
+        throw new Error('Только хост может удалять игроков');
+      }
+      
+      // Нельзя удалить самого себя
+      if (input.targetPlayerId === input.playerId) {
+        throw new Error('Нельзя удалить себя');
+      }
+      
+      const targetPlayer = await ctx.db.query.gamePlayers.findFirst({
+        where: and(
+          eq(gamePlayers.sessionId, input.sessionId),
+          eq(gamePlayers.id, input.targetPlayerId)
+        ),
+      });
+      
+      if (!targetPlayer) {
+        throw new Error('Игрок не найден');
+      }
+      
+      // Удаляем игрока
+      await ctx.db.delete(gamePlayers)
+        .where(eq(gamePlayers.id, input.targetPlayerId));
+      
+      return { success: true, removedPlayerId: input.targetPlayerId };
+    });
+
+  // Экспортируем router
+  export const gameRouter = createTRPCRouter({
+    createSession,
+    joinSession,
+    startGame,
+    submitWord,
+    getSessionState,
+    addBot,
+    setTeam,
+    rematch,
+    removePlayer,
   });
 
-// Экспортируем router
-export const gameRouter = createTRPCRouter({
-  createSession,
-  joinSession,
-  startGame,
-  submitWord,
-  getSessionState,
-  addBot,
-  setTeam,
-  rematch,
-});
-
-export type GameRouter = typeof gameRouter;
+  export type GameRouter = typeof gameRouter;
