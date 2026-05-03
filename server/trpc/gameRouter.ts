@@ -403,6 +403,7 @@ const getSessionState = publicProcedure
       endTime: session.endsAt,
       player: currentPlayer,
       teams: calculateTeams(players),
+      rematchSessionId: session.rematchSessionId,
     };
   });
 
@@ -590,12 +591,17 @@ const rematch = publicProcedure
       newPlayerIds.push({ oldId: oldPlayer.id, newId: newPlayer.id });
     }
     
+    // Записываем ссылку на реванш в старую сессию
+    await ctx.db.update(gameSessions)
+      .set({ rematchSessionId: newSession.id })
+      .where(eq(gameSessions.id, input.sessionId));
+    
     return {
       success: true,
       sessionId: newSession.id,
       grid,
       wordList: placedWords,
-      playerMap: newPlayerIds, // Старый ID → Новый ID
+      playerMap: newPlayerIds,
       gameMode: oldSession.gameMode,
     };
   });

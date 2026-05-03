@@ -18,9 +18,13 @@ export async function GET() {
         max_players integer NOT NULL DEFAULT 6,
         duration integer NOT NULL DEFAULT 300,
         created_at timestamp NOT NULL DEFAULT now(),
-        ends_at timestamp
+        ends_at timestamp,
+        rematch_session_id uuid
       );
     `);
+
+    -- Добавляем колонку rematch_session_id если не существует
+    await client.unsafe(`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS rematch_session_id uuid;`);
 
     await client.unsafe(`
       CREATE TABLE IF NOT EXISTS users (

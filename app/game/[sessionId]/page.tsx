@@ -44,6 +44,7 @@ interface GameState {
     totalWords: number;
     players: string[];
   }>;
+  rematchSessionId?: string | null;
 }
 
 export default function GamePage({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -119,6 +120,28 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       router.push(`/game/${data.sessionId}?playerId=${newPlayerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
     },
   });
+
+  // Автопереход на реванш для хоста, для остальных — показываем баннер
+  const [showRematchBanner, setShowRematchBanner] = useState(false);
+  
+  useEffect(() => {
+    if (gameState?.rematchSessionId && !showRematchBanner) {
+      setShowRematchBanner(true);
+    }
+  }, [gameState?.rematchSessionId]);
+
+  const handleJoinRematch = async () => {
+    if (!gameState?.rematchSessionId) return;
+    try {
+      const joinData = await trpc.game.joinSession.mutate({
+        sessionId: gameState.rematchSessionId,
+        playerName: playerName || 'Игрок',
+      });
+      router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}`);
+    } catch (err: any) {
+      setMessage('Ошибка присоединения к реваншу: ' + err.message);
+    }
+  };
 
   // Проверка новых найденных слов для уведомления
   useEffect(() => {
@@ -300,6 +323,20 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             </div>
           )}
         </div>
+
+        {/* Баннер реванша */}
+        {showRematchBanner && gameState?.rematchSessionId && (
+          <div className="mb-6 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 text-green-800 px-6 py-4 rounded-lg text-center animate-pulse">
+            <div className="text-lg font-bold mb-2">🔄 Создан реванш!</div>
+            <div className="text-sm mb-3">Хост создал новую игру с теми же игроками</div>
+            <button
+              onClick={handleJoinRematch}
+              className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-all"
+            >
+              Присоединиться к реваншу
+            </button>
+          </div>
+        )}
 
         {/* Выбор команды (в командном режиме) */}
         {gameState.status === 'waiting' && gameState.gameMode === 'team' && (
