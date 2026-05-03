@@ -319,6 +319,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const isHost = gameState.players[0]?.id === playerId;
   const isGameStarted = gameState.status === 'in_progress';
   const isGameFinished = gameState.status === 'finished';
+  const gameStatus = gameState.status;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -560,6 +561,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               isHost={isHost}
               onSetTeam={(botId, team) => setTeamMutation.mutate({ sessionId, playerId: botId, team: team as any })}
               onRemovePlayer={handleRemovePlayer}
+              status={gameStatus}
             />
 
             {/* Список слов (скрываем в реальной игре, но показываем для теста) */}

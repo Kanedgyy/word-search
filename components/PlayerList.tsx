@@ -26,6 +26,7 @@ interface PlayerListProps {
   isHost?: boolean;
   onSetTeam?: (playerId: string, team: string) => void;
   onRemovePlayer?: (playerId: string) => void;
+  status?: 'waiting' | 'in_progress' | 'finished';
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -124,14 +125,14 @@ export function PlayerList({ players, currentPlayerId, title = 'Игроки:', 
                 </div>
               </div>
               
-              {/* Счёт и кнопки */}
+                {/* Счёт и кнопки */}
               <div className="flex items-center gap-3">
                 <div className="text-xl font-bold text-gray-800">
                   {player.wordsFound}
                 </div>
                 
-                {/* Кнопка удаления (только для хоста, не для себя) */}
-                {isHost && !isCurrentPlayer && onRemovePlayer && (
+                {/* Кнопка удаления (только для хоста, не для себя, и только до начала игры) */}
+                {isHost && !isCurrentPlayer && onRemovePlayer && status === 'waiting' && (
                   <button
                     onClick={() => {
                       if (confirm(`Удалить ${player.name}?`)) {
