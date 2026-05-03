@@ -54,6 +54,9 @@ export async function GET() {
     //Добавляем колонку difficulty если таблица уже существует (для обновления)
     await client.unsafe(`ALTER TABLE game_players ADD COLUMN IF NOT EXISTS difficulty varchar(20);`);
 
+    //Добавляем колонку words_found для кэша счётчика слов
+    await client.unsafe(`ALTER TABLE game_players ADD COLUMN IF NOT EXISTS words_found integer NOT NULL DEFAULT 0;`);
+
     await client.unsafe(`
       CREATE TABLE IF NOT EXISTS found_words (
         id uuid PRIMARY KEY DEFAULT md5(random()::text)::uuid,

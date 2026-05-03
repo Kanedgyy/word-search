@@ -46,6 +46,8 @@ export const gamePlayers = pgTable('game_players', {
   team: varchar('team', { enum: ['red', 'blue', 'green', 'yellow'] }),
   // Сложность бота
   difficulty: varchar('difficulty', { enum: ['easy', 'medium', 'hard'] }),
+  // Количество найденных слов (кэш для быстрого отображения)
+  wordsFound: integer('words_found').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
