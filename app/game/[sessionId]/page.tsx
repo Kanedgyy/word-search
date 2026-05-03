@@ -198,11 +198,13 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     try {
       await startGameMutation.mutateAsync({ sessionId });
       // Запускаем ботов через Edge API route (фоновые задачи)
-      fetch('/api/run-bots', {
+      const res = await fetch('/api/run-bots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
-      }).catch(err => console.error('Ошибка запуска ботов:', err));
+      });
+      const data = await res.json();
+      console.log('[run-bots]', data);
       setMessage('Игра началась!');
     } catch (err: any) {
       console.error('Ошибка запуска игры:', err);
@@ -420,21 +422,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 <button
                   onClick={() => handleAddBot('easy')}
                   className="px-4 py-2 rounded-lg font-medium text-sm bg-green-500/80 text-white hover:bg-green-500 transition-all"
-                  title="Лёгкий: медленный (8-20с), много ошибок (65%), часто зависает"
+                  title="Лёгкий: медленный (0.4–1.5с), много ошибок (45%), редко зависает"
                 >
                   🌱 Лёгкий
                 </button>
                 <button
                   onClick={() => handleAddBot('medium')}
                   className="px-4 py-2 rounded-lg font-medium text-sm bg-yellow-500/80 text-white hover:bg-yellow-500 transition-all"
-                  title="Средний: обычная скорость (5-12с), половина ошибок (45%)"
+                  title="Средний: обычная скорость (0.25–0.9с), половина ошибок (25%)"
                 >
                   ⚡ Средний
                 </button>
                 <button
                   onClick={() => handleAddBot('hard')}
                   className="px-4 py-2 rounded-lg font-medium text-sm bg-red-500/80 text-white hover:bg-red-500 transition-all"
-                  title="Сложный: быстрый (3-7с), редко ошибается (30%), знает все слова"
+                  title="Сложный: быстрый (0.1–0.5с), редко ошибается (8%), знает все слова"
                 >
                   🔥 Сложный
                 </button>

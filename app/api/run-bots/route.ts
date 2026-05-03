@@ -10,17 +10,20 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const { sessionId } = await request.json();
+    console.log(`[run-bots] Получен запрос для сессии ${sessionId}`);
     
     after(async () => {
       try {
+        console.log(`[after] Запускаю ботов для ${sessionId}`);
         const bots = await db.select().from(gamePlayers).where(
           and(eq(gamePlayers.sessionId, sessionId), eq(gamePlayers.isBot, true))
         );
         
-        console.log(`[after] Запуск ${bots.length} ботов для сессии ${sessionId}`);
+        console.log(`[after] Найдено ${bots.length} ботов для сессии ${sessionId}`);
         
         for (const bot of bots) {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
+          console.log(`[after] Запуск бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
           const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
           gameBot.startFindingWords().catch(err => {
             console.error(`[after] Ошибка бота ${bot.id}:`, err);
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    return NextResponse.json({ success: true, message: 'Боты запущены в фоне' });
+    return NextResponse.json({ success: true, message: `Запущено в фоне` });
   } catch (error: any) {
     console.error('Run bots error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
