@@ -107,6 +107,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const startGameMutation = trpc.game.startGame.useMutation();
   const addBotMutation = trpc.game.addBot.useMutation();
   const setTeamMutation = trpc.game.setTeam.useMutation();
+  const joinSessionMutation = trpc.game.joinSession.useMutation();
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: (data) => {
       const oldPlayerId = playerId || localStorage.getItem('playerId');
@@ -133,7 +134,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const handleJoinRematch = async () => {
     if (!gameState?.rematchSessionId) return;
     try {
-      const joinData = await trpc.game.joinSession.mutate({
+      const joinData = await joinSessionMutation.mutateAsync({
         sessionId: gameState.rematchSessionId,
         playerName: playerName || 'Игрок',
       });
