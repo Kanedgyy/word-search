@@ -139,41 +139,6 @@ const joinSession = publicProcedure
     };
   });
 
-    if (!session) {
-      throw new Error('Сессия не найдена');
-    }
-    
-    if (session.status !== 'waiting') {
-      throw new Error('Игра уже началась');
-    }
-    
-    const currentPlayers = await ctx.db.select().from(gamePlayers).where(
-      eq(gamePlayers.sessionId, input.sessionId)
-    );
-    
-    if (currentPlayers.length >= session.maxPlayers) {
-      throw new Error('Сессия заполнена');
-    }
-    
-    const color = PLAYER_COLORS[currentPlayers.length % PLAYER_COLORS.length];
-    
-    const [player] = await ctx.db.insert(gamePlayers).values({
-      sessionId: input.sessionId,
-      name: input.playerName,
-      isBot: false,
-      color,
-      turnOrder: currentPlayers.length + 1,
-      status: 'joined',
-    }).returning();
-    
-    return {
-      playerId: player.id,
-      color: player.color,
-      playersCount: currentPlayers.length + 1,
-      isHost: currentPlayers.length === 0,
-    };
-  });
-
 /**
  * Запускает игру
  */
