@@ -305,6 +305,15 @@ export class GameBot {
       path: wordData.path,
     });
 
+    // Обновляем счётчик найденных слов игрока
+    const playerWords = await db.select({ id: foundWords.id })
+      .from(foundWords)
+      .where(eq(foundWords.playerId, this.playerId));
+    
+    await db.update(gamePlayers)
+      .set({ wordsFound: playerWords.length })
+      .where(eq(gamePlayers.id, this.playerId));
+
     // Проверяем, не закончилась ли игра
     const session = await db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, this.sessionId),
