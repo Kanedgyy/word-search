@@ -52,9 +52,18 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const router = useRouter();
   
   const sessionId = resolvedParams.sessionId;
-  const playerId = searchParams.get('playerId') || '';
-  const playerName = searchParams.get('name') || 'Игрок';
-  const playerColor = searchParams.get('color') || '#4ECDC4';
+  const playerId = searchParams.get('playerId') || localStorage.getItem('playerId') || '';
+  const playerName = searchParams.get('name') || localStorage.getItem('playerName') || 'Игрок';
+  const playerColor = searchParams.get('color') || localStorage.getItem('playerColor') || '#4ECDC4';
+
+  // Сохраняем данные в localStorage при первом входе
+  useEffect(() => {
+    if (searchParams.get('playerId')) {
+      localStorage.setItem('playerId', searchParams.get('playerId')!);
+      localStorage.setItem('playerName', searchParams.get('name') || 'Игрок');
+      localStorage.setItem('playerColor', searchParams.get('color') || '#4ECDC4');
+    }
+  }, [searchParams]);
 
   // Используем tRPC для запросов
   const { 
@@ -99,12 +108,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const setTeamMutation = trpc.game.setTeam.useMutation();
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: (data) => {
-      const oldPlayerId = localStorage.getItem('playerId');
+      const oldPlayerId = playerId || localStorage.getItem('playerId');
       const mapping = data.playerMap.find((p: { oldId: string; newId: string }) => p.oldId === oldPlayerId);
       if (mapping) {
         localStorage.setItem('playerId', mapping.newId);
       }
-      router.push(`/game/${data.sessionId}`);
+      const newPlayerId = mapping?.newId || oldPlayerId;
+      const name = localStorage.getItem('playerName') || 'Игрок';
+      const color = localStorage.getItem('playerColor') || '#4ECDC4';
+      router.push(`/game/${data.sessionId}?playerId=${newPlayerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
     },
   });
 
