@@ -592,34 +592,17 @@ const rematch = publicProcedure
       gameMode: oldSession.gameMode,
     }).returning();
     
-    // Добавляем тех же игроков в новую сессию
-    const newPlayerIds: Array<{ oldId: string; newId: string }> = [];
-    for (let i = 0; i < realPlayers.length; i++) {
-      const oldPlayer = realPlayers[i];
-      const [newPlayer] = await ctx.db.insert(gamePlayers).values({
-        sessionId: newSession.id,
-        name: oldPlayer.name,
-        isBot: false,
-        color: PLAYER_COLORS[i % PLAYER_COLORS.length],
-        turnOrder: i + 1,
-        status: 'joined',
-        team: oldPlayer.team,
-      }).returning();
-      
-      newPlayerIds.push({ oldId: oldPlayer.id, newId: newPlayer.id });
-    }
-    
     // Записываем ссылку на реванш в старую сессию
     await ctx.db.update(gameSessions)
       .set({ rematchSessionId: newSession.id })
       .where(eq(gameSessions.id, input.sessionId));
     
+    // Возвращаем только ID новой сессии (игроки добавятся через joinSession)
     return {
       success: true,
       sessionId: newSession.id,
       grid,
       wordList: placedWords,
-      playerMap: newPlayerIds,
       gameMode: oldSession.gameMode,
     };
   });

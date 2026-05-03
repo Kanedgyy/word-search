@@ -112,15 +112,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const joinSessionMutation = trpc.game.joinSession.useMutation();
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: (data) => {
-      const oldPlayerId = playerId || localStorage.getItem('playerId');
-      const mapping = data.playerMap.find((p: { oldId: string; newId: string }) => p.oldId === oldPlayerId);
-      if (mapping) {
-        localStorage.setItem('playerId', mapping.newId);
-      }
-      const newPlayerId = mapping?.newId || oldPlayerId;
+      // Хост сразу переходит в новую сессию
       const name = localStorage.getItem('playerName') || 'Игрок';
       const color = localStorage.getItem('playerColor') || '#4ECDC4';
-      router.push(`/game/${data.sessionId}?playerId=${newPlayerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
+      router.push(`/game/${data.sessionId}?playerId=${playerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
     },
   });
 
@@ -195,6 +190,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
   // Запуск игры (только для хоста)
   const handleStartGame = async () => {
+    // Проверка: в командном режиме все должны выбрать команду
+    if (gameState.gameMode === 'team') {
+      const playersWithoutTeam = gameState.players.filter(p => !p.team);
+      if (playersWithoutTeam.length > 0) {
+        setMessage('⚠️ Не все игроки выбрали команду!');
+        return;
+      }
+    }
+    
     try {
       await startGameMutation.mutateAsync({ sessionId });
       // Запускаем ботов через Edge API route (фоновые задачи)
@@ -331,9 +335,14 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
         {/* Баннер реванша */}
         {showRematchBanner && gameState?.rematchSessionId && (
-          <div className="mb-6 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 text-green-800 px-6 py-4 rounded-lg text-center animate-pulse">
+          <div className="mb-6 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 text-green-800 px-6 py-4 rounded-lg text-center animate-fade-in">
             <div className="text-lg font-bold mb-2">🔄 Создан реванш!</div>
-            <div className="text-sm mb-3">Хост создал новую игру с теми же игроками</div>
+            <div className="text-sm mb-3">
+              Хост создал новую игру. ID сессии: <code className="bg-white px-2 py-0.5 rounded font-mono">{gameState.rematchSessionId}</code>
+            </div>
+            <div className="text-xs mb-3">
+              Скопируйте ID и отправьте друзьям, чтобы они присоединились
+            </div>
             <button
               onClick={handleJoinRematch}
               className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-all"
