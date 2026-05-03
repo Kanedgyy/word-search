@@ -524,7 +524,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gameState.players
-                .sort((a, b) => b.wordsFound - a.wordsFound)
+                .sort((a, b) => {
+                  if (b.wordsFound !== a.wordsFound) {
+                    return b.wordsFound - a.wordsFound;
+                  }
+                  // При равенстве — кто раньше нашёл первое слово
+                  const aTime = a.firstWordTime ?? Infinity;
+                  const bTime = b.firstWordTime ?? Infinity;
+                  return aTime - bTime;
+                })
                 .map((player, index) => (
                   <div
                     key={player.id}
