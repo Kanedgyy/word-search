@@ -191,7 +191,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   // Запуск игры (только для хоста)
   const handleStartGame = async () => {
     // Проверка: в командном режиме все должны выбрать команду
-    if (gameState.gameMode === 'team') {
+    if (gameState?.gameMode === 'team') {
       const playersWithoutTeam = gameState.players.filter(p => !p.team);
       if (playersWithoutTeam.length > 0) {
         setMessage('⚠️ Не все игроки выбрали команду!');
