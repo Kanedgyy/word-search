@@ -529,14 +529,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                   <div
                     key={player.id}
                     className={`p-4 rounded-lg border-l-4 ${
-                      index === 0 ? 'bg-yellow-50 border-yellow-400' :
-                      index === 1 ? 'bg-gray-50 border-gray-400' :
-                      index === 2 ? 'bg-orange-50 border-orange-400' :
+                      index === 0 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-400 shadow-lg' :
                       'bg-white border-gray-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
+                        {index === 0 && (
+                          <div className="text-3xl">🏆</div>
+                        )}
                         <div 
                           className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
                           style={{ backgroundColor: player.color }}
@@ -544,12 +545,13 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                           {player.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-bold text-gray-800">
+                          <div className="font-bold text-gray-800 flex items-center gap-2">
                             {player.name}
-                            {player.isBot && <span className="text-xs text-gray-500 ml-1">(бот)</span>}
+                            {player.isBot && <span className="text-xs text-gray-500">(бот)</span>}
+                            {index === 0 && <span className="text-xs bg-yellow-400 text-white px-2 py-0.5 rounded">Победитель</span>}
                           </div>
                           <div className="text-sm text-gray-600">
-                            Время первого слова: {player.wordsFound > 0 ? (player.firstWordTime || 0) + ' сек' : '-'}
+                            Время первого слова: {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}
                           </div>
                         </div>
                       </div>

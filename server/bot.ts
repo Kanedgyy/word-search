@@ -305,21 +305,33 @@ export class GameBot {
       path: wordData.path,
     });
 
-    // Обновляем счётчик найденных слов игрока
-    const playerWords = await db.select({ id: foundWords.id })
-      .from(foundWords)
-      .where(eq(foundWords.playerId, this.playerId));
-    
-    await db.update(gamePlayers)
-      .set({ wordsFound: playerWords.length })
-      .where(eq(gamePlayers.id, this.playerId));
-
-    // Проверяем, не закончилась ли игра
+    // Проверяем, нужно ли обновить firstWordTime (первое слово бота)
     const session = await db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, this.sessionId),
     });
 
     if (session) {
+      const playerWords = await db.select({ id: foundWords.id })
+        .from(foundWords)
+        .where(eq(foundWords.playerId, this.playerId));
+      
+      // Если это первое слово — обновляем firstWordTime
+      if (playerWords.length === 1) {
+        const sessionStartTime = session.createdAt ? new Date(session.createdAt).getTime() : Date.now();
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - sessionStartTime) / 1000);
+        
+        await db.update(gamePlayers)
+          .set({ firstWordTime: elapsedSeconds })
+          .where(eq(gamePlayers.id, this.playerId));
+      }
+      
+      // Обновляем счётчик найденных слов игрока
+      await db.update(gamePlayers)
+        .set({ wordsFound: playerWords.length })
+        .where(eq(gamePlayers.id, this.playerId));
+
+      // Проверяем, не закончилась ли игра
       const allFound = await db.select({ id: foundWords.id })
         .from(foundWords)
         .where(eq(foundWords.sessionId, this.sessionId));
