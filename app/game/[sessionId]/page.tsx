@@ -560,13 +560,15 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             </div>
 
             <div className="mt-6 text-center flex flex-wrap gap-4 justify-center">
-              <button
-                onClick={() => rematchMutation.mutate({ sessionId, playerId })}
-                disabled={rematchMutation.isPending}
-                className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {rematchMutation.isPending ? '⏳ Создание...' : '🔄 Реванш!'}
-              </button>
+              {!gameState.rematchSessionId && (
+                <button
+                  onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                  disabled={rematchMutation.isPending}
+                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {rematchMutation.isPending ? '⏳ Создание...' : '🔄 Реванш!'}
+                </button>
+              )}
               <button
                 onClick={() => router.push('/')}
                 className="px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"

@@ -572,6 +572,13 @@ const rematch = publicProcedure
     
     const realPlayers = oldPlayers.filter(p => !p.isBot);
     
+    // Перемещаем игрока, нажавшего реванш, на первое место (хост)
+    const requesterIndex = realPlayers.findIndex(p => p.id === input.playerId);
+    if (requesterIndex > 0) {
+      const [requester] = realPlayers.splice(requesterIndex, 1);
+      realPlayers.unshift(requester);
+    }
+    
     // Создаём новую сессию
     const wordList = getRandomWordSubset(12);
     const { grid, placedWords } = generateWordSearch(wordList);
