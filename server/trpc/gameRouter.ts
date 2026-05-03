@@ -81,7 +81,7 @@ const createSession = publicProcedure
   });
 
 /**
- * Присоединяется к сессии
+ * Присоединение к сессии
  */
 const joinSession = publicProcedure
   .input(z.object({
@@ -93,6 +93,52 @@ const joinSession = publicProcedure
       where: eq(gameSessions.id, input.sessionId),
     });
     
+    if (!session) {
+      throw new Error('Сессия не найдена');
+    }
+    
+    if (session.status !== 'waiting') {
+      throw new Error('Игра уже началась');
+    }
+    
+    const currentPlayers = await ctx.db.select().from(gamePlayers).where(
+      eq(gamePlayers.sessionId, input.sessionId)
+    );
+    
+    // Проверяем, есть ли уже игрок с таким именем (для реванша)
+    const existingPlayer = currentPlayers.find(p => p.name === input.playerName && !p.isBot);
+    if (existingPlayer) {
+      return {
+        playerId: existingPlayer.id,
+        color: existingPlayer.color,
+        playersCount: currentPlayers.length,
+        isHost: currentPlayers[0]?.id === existingPlayer.id,
+      };
+    }
+    
+    if (currentPlayers.length >= session.maxPlayers) {
+      throw new Error('Сессия заполнена');
+    }
+    
+    const color = PLAYER_COLORS[currentPlayers.length % PLAYER_COLORS.length];
+    
+    const [player] = await ctx.db.insert(gamePlayers).values({
+      sessionId: input.sessionId,
+      name: input.playerName,
+      isBot: false,
+      color,
+      turnOrder: currentPlayers.length + 1,
+      status: 'joined',
+    }).returning();
+    
+    return {
+      playerId: player.id,
+      color: player.color,
+      playersCount: currentPlayers.length + 1,
+      isHost: currentPlayers.length === 0,
+    };
+  });
+
     if (!session) {
       throw new Error('Сессия не найдена');
     }
