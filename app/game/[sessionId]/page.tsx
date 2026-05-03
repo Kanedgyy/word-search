@@ -82,6 +82,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   );
 
+  
   // Проверка: исключён ли игрок
   useEffect(() => {
     if (gameState?.player === null && playerId) {
@@ -561,7 +562,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               isHost={isHost}
               onSetTeam={(botId, team) => setTeamMutation.mutate({ sessionId, playerId: botId, team: team as any })}
               onRemovePlayer={handleRemovePlayer}
-              status={gameStatus}
+              status={gameState.status}
             />
 
             {/* Список слов (скрываем в реальной игре, но показываем для теста) */}

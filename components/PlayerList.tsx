@@ -26,7 +26,7 @@ interface PlayerListProps {
   isHost?: boolean;
   onSetTeam?: (playerId: string, team: string) => void;
   onRemovePlayer?: (playerId: string) => void;
-  status?: 'waiting' | 'in_progress' | 'finished';
+  status?: 'waiting' | 'in_progress' | 'finished' | undefined;
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -43,7 +43,7 @@ const TEAM_NAMES: Record<string, string> = {
   yellow: '🟡',
 };
 
-export function PlayerList({ players, currentPlayerId, title = 'Игроки:', showTeams = false, isHost = false, onSetTeam, onRemovePlayer }: PlayerListProps) {
+export function PlayerList({ players, currentPlayerId, title = 'Игроки:', showTeams = false, isHost = false, onSetTeam, onRemovePlayer, status }: PlayerListProps) {
   // Сортируем игроков по количеству слов
   const sortedPlayers = [...players].sort((a, b) => b.wordsFound - a.wordsFound);
 
