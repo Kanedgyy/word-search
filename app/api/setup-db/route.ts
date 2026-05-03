@@ -23,7 +23,6 @@ export async function GET() {
       );
     `);
 
-    -- Добавляем колонку rematch_session_id если не существует
     await client.unsafe(`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS rematch_session_id uuid;`);
 
     await client.unsafe(`
