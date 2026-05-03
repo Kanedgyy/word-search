@@ -603,6 +603,20 @@ const addBot = publicProcedure
       targetPlayerId: z.string(), // Игрок которого удаляем
     }))
     .mutation(async ({ ctx, input }) => {
+      // Проверяем статус сессии
+      const session = await ctx.db.query.gameSessions.findFirst({
+        where: eq(gameSessions.id, input.sessionId),
+      });
+      
+      if (!session) {
+        throw new Error('Сессия не найдена');
+      }
+      
+      // Нельзя удалять во время/после игры
+      if (session.status !== 'waiting') {
+        throw new Error('Нельзя удалять игроков во время или после игры');
+      }
+      
       // Проверяем что запрашивающий — хост
       const hostPlayer = await ctx.db.query.gamePlayers.findFirst({
         where: and(

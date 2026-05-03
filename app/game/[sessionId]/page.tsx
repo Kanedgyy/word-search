@@ -78,8 +78,17 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       refetchInterval: 2000, // Polling каждые 2 секунды
       enabled: !!sessionId,  // Запускаем даже без playerId — сервер вернёт данные
       staleTime: 0,          // Всегда свежие данные
+      retry: false,
     }
   );
+
+  // Проверка: исключён ли игрок
+  useEffect(() => {
+    if (gameState?.player === null && playerId) {
+      // Игрок не найден в сессии — был исключён
+      setError('Вы были исключены из игры хостом');
+    }
+  }, [gameState, playerId]);
 
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -268,6 +277,25 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-2xl">Загрузка...</div>
+      </div>
+    );
+  }
+
+  // Игрок исключён
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white rounded-lg p-8 shadow-lg max-w-md w-full text-center">
+          <div className="text-6xl mb-4">😔</div>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Вы исключены</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-all"
+          >
+            Вернуться на главную
+          </button>
+        </div>
       </div>
     );
   }
