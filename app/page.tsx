@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { trpc } from '../lib/trpc-client';
 
 export default function Home() {
@@ -104,6 +105,16 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-fade-in">
+        {/* Ссылки на регистрацию/вход */}
+        <div className="flex justify-between items-center mb-6">
+          <Link href="/auth/login" className="text-sm text-purple-600 hover:underline">
+            Войти
+          </Link>
+          <Link href="/auth/register" className="text-sm text-purple-600 hover:underline">
+            Зарегистрироваться
+          </Link>
+        </div>
+
         {/* Экран созданной сессии */}
         {createdSessionId ? (
           <div className="text-center">

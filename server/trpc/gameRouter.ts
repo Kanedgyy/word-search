@@ -62,6 +62,7 @@ const createSession = publicProcedure
     const wordList = getRandomWordSubset(12);
     const { grid, placedWords } = generateWordSearch(wordList);
 
+    // Временно не передаём onTimeLimit пока миграция не применена
     const [session] = await ctx.db.insert(gameSessions).values({
       wordList: placedWords,
       grid: grid,
@@ -69,7 +70,6 @@ const createSession = publicProcedure
       maxPlayers: input.maxPlayers,
       duration: input.duration,
       gameMode: input.gameMode,
-      onTimeLimit: input.onTimeLimit,
     }).returning();
     
     return {
