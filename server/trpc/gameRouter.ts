@@ -153,7 +153,7 @@ const startGame = publicProcedure
     const session = await ctx.db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, input.sessionId),
     });
-    
+
     if (!session) {
       throw new Error('Сессия не найдена');
     }
