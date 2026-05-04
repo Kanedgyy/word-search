@@ -8,7 +8,8 @@ export default function Home() {
   const router = useRouter();
   const [playerName, setPlayerName] = useState('');
   const [sessionId, setSessionId] = useState('');
-  const [gameMode, setGameMode] = useState<'individual' | 'team' | 'timed'>('individual');
+  const [gameMode, setGameMode] = useState<'individual' | 'team'>('individual');
+  const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [error, setError] = useState('');
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
   const [createdPlayerId, setCreatedPlayerId] = useState<string>('');
@@ -29,7 +30,8 @@ export default function Home() {
       const createData = await createSessionMutation.mutateAsync({ 
         maxPlayers: 6, 
         duration: 300,
-        gameMode: gameMode as 'individual' | 'team',
+        gameMode,
+        onTimeLimit,
       });
       
       const newSessionId = createData.sessionId;
@@ -172,7 +174,7 @@ export default function Home() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Режим игры
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setGameMode('individual')}
@@ -183,7 +185,7 @@ export default function Home() {
                   }`}
                 >
                   <div className="text-lg mb-1">👤</div>
-                  <div className="text-xs">Каждый сам за себя</div>
+                  <div className="text-sm">Каждый сам за себя</div>
                 </button>
                 <button
                   type="button"
@@ -195,21 +197,33 @@ export default function Home() {
                   }`}
                 >
                   <div className="text-lg mb-1">👥</div>
-                  <div className="text-xs">Командный</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGameMode('timed')}
-                  className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
-                    gameMode === 'timed'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                  }`}
-                >
-                  <div className="text-lg mb-1">⏱️</div>
-                  <div className="text-xs">На время</div>
+                  <div className="text-sm">Командный</div>
                 </button>
               </div>
+            </div>
+
+            {/* Переключатель "Игра на время" */}
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  onClick={() => setOnTimeLimit(!onTimeLimit)}
+                  className={`w-14 h-8 rounded-full transition-all relative ${
+                    onTimeLimit ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                      onTimeLimit ? 'left-7' : 'left-1'
+                    }`}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⏱️</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Игра на время ({Math.floor(300 / 60)} мин)
+                  </span>
+                </div>
+              </label>
             </div>
 
             {/* Ошибка */}

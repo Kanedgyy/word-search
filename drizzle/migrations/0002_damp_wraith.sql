@@ -1,0 +1,1 @@
+ALTER TABLE "game_sessions" ADD COLUMN "on_time_limit" boolean DEFAULT false NOT NULL;

@@ -16,8 +16,10 @@ export const gameSessions = pgTable('game_sessions', {
   wordList: text('word_list').array().notNull(),
   // Состояние поля (10x10 букв) — храним как JSON
   grid: jsonb('grid').$type<string[][]>().notNull(),
-  // Режим игры: individual (каждый сам за себя), team (командный), timed (на время)
-  gameMode: varchar('game_mode', { enum: ['individual', 'team', 'timed'] }).notNull().default('individual'),
+  // Режим игры: individual (каждый сам за себя) или team (командный)
+  gameMode: varchar('game_mode', { enum: ['individual', 'team'] }).notNull().default('individual'),
+  // Игра на времени (да/нет)
+  onTimeLimit: boolean('on_time_limit').notNull().default(false),
   // Статус игры: 'waiting' | 'in_progress' | 'finished'
   status: varchar('status', { enum: ['waiting', 'in_progress', 'finished'] }).notNull().default('waiting'),
   // Максимальное количество игроков

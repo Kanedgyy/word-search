@@ -27,7 +27,7 @@ interface PlayerListProps {
   onSetTeam?: (playerId: string, team: string) => void;
   onRemovePlayer?: (playerId: string) => void;
   status?: 'waiting' | 'in_progress' | 'finished' | undefined;
-  gameMode?: 'individual' | 'team' | 'timed';
+  gameMode?: 'individual' | 'team' | undefined;
 }
 
 const TEAM_COLORS: Record<string, string> = {
