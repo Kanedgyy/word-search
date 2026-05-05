@@ -77,6 +77,7 @@ const createSession = publicProcedure
       maxPlayers: input.maxPlayers,
       duration: input.duration,
       gameMode: input.gameMode,
+      onTimeLimit: false, // Пока не храним в БД, будет храниться в localStorage
     };
   });
 
@@ -415,6 +416,7 @@ const getSessionState = publicProcedure
       player: currentPlayer,
       teams: calculateTeams(players),
       rematchSessionId: session.rematchSessionId,
+      onTimeLimit: false, // Пока не храним в БД
     };
   });
 

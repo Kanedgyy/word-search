@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { trpc } from '../lib/trpc-client';
@@ -10,11 +10,20 @@ export default function Home() {
   const [playerName, setPlayerName] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [gameMode, setGameMode] = useState<'individual' | 'team'>('individual');
+  const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [error, setError] = useState('');
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
   const [createdPlayerId, setCreatedPlayerId] = useState<string>('');
   const [createdColor, setCreatedColor] = useState<string>('');
   const [copied, setCopied] = useState(false);
+
+  // Загружаем сохранённое имя при монтировании
+  useEffect(() => {
+    const savedName = localStorage.getItem('playerName');
+    if (savedName) {
+      setPlayerName(savedName);
+    }
+  }, []);
 
   // Используем tRPC клиент для вызова процедур
   const createSessionMutation = trpc.game.createSession.useMutation();
@@ -44,6 +53,11 @@ export default function Home() {
         setCreatedSessionId(newSessionId);
         setCreatedPlayerId(joinData.playerId);
         setCreatedColor(joinData.color);
+        
+        // Сохраняем onTimeLimit для сессии в URL
+        const url = `/game/${newSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`;
+        router.push(url);
+        return;
       }
     } catch (err: any) {
       setError('Ошибка создания игры: ' + (err.message || 'Неизвестная ошибка'));
@@ -53,7 +67,8 @@ export default function Home() {
 
   const handleEnterGame = () => {
     if (createdSessionId && createdPlayerId) {
-      router.push(`/game/${createdSessionId}?playerId=${createdPlayerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(createdColor)}`);
+      const url = `/game/${createdSessionId}?playerId=${createdPlayerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(createdColor)}&onTimeLimit=${onTimeLimit}`;
+      router.push(url);
     }
   };
 
@@ -209,6 +224,30 @@ export default function Home() {
                   <div className="text-sm">Командный</div>
                 </button>
               </div>
+            </div>
+
+            {/* Переключатель "Игра на время" */}
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  onClick={() => setOnTimeLimit(!onTimeLimit)}
+                  className={`w-14 h-8 rounded-full transition-all relative ${
+                    onTimeLimit ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                      onTimeLimit ? 'left-7' : 'left-1'
+                    }`}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⏱️</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Игра на время (5 мин)
+                  </span>
+                </div>
+              </label>
             </div>
 
             {/* Ошибка */}

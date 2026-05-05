@@ -45,6 +45,7 @@ interface GameState {
     players: string[];
   }>;
   rematchSessionId?: string | null;
+  onTimeLimit?: boolean;
 }
 
 export default function GamePage({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -82,29 +83,30 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   );
 
-  
-  // Проверка: исключён ли игрок
-  useEffect(() => {
-    if (gameState?.player === null && playerId) {
-      // Игрок не найден в сессии — был исключён
-      setError('Вы были исключены из игры хостом');
-    }
-  }, [gameState, playerId]);
-
+  // Состояния
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pendingBotDifficulty, setPendingBotDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null);
-  const lastFoundWordsRef = useRef<Set<string>>(new Set());
-
-  // Копирование ID сессии в буфер обмена
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [copied, setCopied] = useState(false);
+  const lastFoundWordsRef = useRef<Set<string>>(new Set());
+  
+  // Автопереход на реванш для хоста, для остальных — показываем баннер
+  const [showRematchBanner, setShowRematchBanner] = useState(false);
+  
+  useEffect(() => {
+    if (gameState?.rematchSessionId && !showRematchBanner) {
+      setShowRematchBanner(true);
+    }
+  }, [gameState?.rematchSessionId]);
+
   const handleCopySessionId = async () => {
     try {
       await navigator.clipboard.writeText(sessionId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback для старых браузеров
       const ta = document.createElement('textarea');
       ta.value = sessionId;
       document.body.appendChild(ta);
@@ -115,6 +117,50 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // Загружаем onTimeLimit из URL или localStorage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlParam = urlParams.get('onTimeLimit');
+    if (urlParam === 'true') {
+      setOnTimeLimit(true);
+    } else {
+      const saved = localStorage.getItem(`session_${sessionId}_onTimeLimit`);
+      if (saved) {
+        setOnTimeLimit(JSON.parse(saved));
+      }
+    }
+  }, [sessionId]);
+
+  // Проверка: исключён ли игрок
+  useEffect(() => {
+    if (gameState?.player === null && playerId) {
+      // Игрок не найден в сессии — был исключён
+      setError('Вы были исключены из игры хостом');
+    }
+  }, [gameState, playerId]);
+
+  // Таймер для режима onTimeLimit
+  useEffect(() => {
+    if (onTimeLimit && gameState?.status === 'in_progress' && gameState.startTime) {
+      const timer = setInterval(() => {
+        const now = new Date();
+        const endTime = new Date(gameState.startTime!);
+        endTime.setSeconds(endTime.getSeconds() + gameState.duration);
+        const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+        setTimeRemaining(remaining);
+        
+        if (remaining === 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    } else {
+      setTimeRemaining(0);
+    }
+  }, [onTimeLimit, gameState?.status, gameState?.startTime, gameState?.duration]);
+
   const submitWordMutation = trpc.game.submitWord.useMutation();
   const startGameMutation = trpc.game.startGame.useMutation();
   const addBotMutation = trpc.game.addBot.useMutation();
@@ -143,9 +189,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     },
   });
 
-  // Автопереход на реванш для хоста, для остальных — показываем баннер
-  const [showRematchBanner, setShowRematchBanner] = useState(false);
-  
+  // Загружаем onTimeLimit из URL или localStorage
   useEffect(() => {
     if (gameState?.rematchSessionId && !showRematchBanner) {
       setShowRematchBanner(true);
@@ -371,7 +415,18 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           
           {gameState.status === 'in_progress' && (
             <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-2 rounded-lg">
-              🎯 Игра идёт! Найдите как можно больше слов!
+              {onTimeLimit ? (
+                <div className="flex items-center gap-3">
+                  <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
+                  <div className={`px-3 py-1 rounded-lg font-bold text-lg ${
+                    timeRemaining <= 30 ? 'bg-red-500 text-white animate-pulse' : 'bg-white/50'
+                  }`}>
+                    ⏱️ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </div>
+                </div>
+              ) : (
+                <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
+              )}
             </div>
           )}
           
@@ -387,6 +442,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           <span className="inline-block px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
             {gameState.gameMode === 'individual' && '👤 Каждый сам за себя'}
             {gameState.gameMode === 'team' && '👥 Командный режим'}
+            {onTimeLimit && ' ⏱️ На время'}
           </span>
         </div>
 
@@ -588,8 +644,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         {isGameFinished && (
           <div className="mt-8 bg-white rounded-lg shadow-lg p-6 animate-fade-in">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
-              🏆 Итоги игры 🏆
+              🏆 {onTimeLimit ? 'Итоги игры на время 🏆' : 'Итоги игры 🏆'}
             </h2>
+            
+            {onTimeLimit && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg text-center">
+                <p className="text-gray-700">
+                  <strong>Победил тот, кто угадал больше слов за {gameState.duration / 60} минут!</strong>
+                </p>
+              </div>
+            )}
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gameState.players
@@ -628,7 +692,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                             {index === 0 && <span className="text-xs bg-yellow-400 text-white px-2 py-0.5 rounded">Победитель</span>}
                           </div>
                           <div className="text-sm text-gray-600">
-                            Слова: {player.wordsFound}
+                            {onTimeLimit ? (
+                              <>Время первого слова: {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
+                            ) : (
+                              <>Слова: {player.wordsFound}</>
+                            )}
                           </div>
                         </div>
                       </div>

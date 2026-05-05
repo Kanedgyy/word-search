@@ -2,15 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/drizzle/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email } = await request.json();
+    const { name, email, password } = await request.json();
 
     // Валидация
-    if (!name || !email) {
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { error: 'Имя и email обязательны' },
+        { error: 'Все поля обязательны' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Пароль должен быть не менее 6 символов' },
         { status: 400 }
       );
     }
@@ -27,12 +35,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Хеширование пароля
+    const passwordHash = await bcrypt.hash(password, 10);
+
     // Создание пользователя
     const [newUser] = await db
       .insert(users)
       .values({
         name,
         email,
+        passwordHash,
       })
       .returning();
 
