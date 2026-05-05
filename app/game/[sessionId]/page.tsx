@@ -669,7 +669,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               onSetTeam={(botId, team) => setTeamMutation.mutate({ sessionId, playerId: botId, team: team as any })}
               onRemovePlayer={handleRemovePlayer}
               status={gameState.status}
-              gameMode={gameState.gameMode}
             />
 
             {/* Word list (shown for testing) */}
