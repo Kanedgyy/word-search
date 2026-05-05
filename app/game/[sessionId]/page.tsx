@@ -408,13 +408,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         </div>
       )}
 
-      <div className="relative z-10 max-w-7xl mx-auto mt-20 md:mt-24">
+      <div className="relative z-10 max-w-7xl mx-auto mt-4 md:mt-6">
         {/* Заголовок + ID сессии */}
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-4xl font-black text-white bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text">
+            <button
+              onClick={() => router.push('/')}
+              className="text-4xl font-black text-white bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent hover:scale-105 transition-transform cursor-pointer"
+            >
               🎮 Филворд
-            </h1>
+            </button>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                 {playerName.charAt(0).toUpperCase()}
@@ -466,7 +469,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               </div>
             </div>
           )}
-          
+
           {gameState.status === 'finished' && (
             <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/50 text-purple-200 px-6 py-3 rounded-xl backdrop-blur-sm">
               🏆 Игра завершена!
@@ -539,10 +542,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           </div>
         )}
 
-        {/* Таблица команд */}
-        {gameState.gameMode === 'team' && gameState.teams && gameState.teams.length > 0 && (
+        {/* Таблица команд (только после завершения игры) */}
+        {gameState.gameMode === 'team' && gameState.teams && gameState.teams.length > 0 && gameState.status === 'finished' && (
           <div className="mb-8 bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-            <h3 className="font-bold text-white text-lg mb-4">🏆 Счёт команд:</h3>
+            <h3 className="font-bold text-white text-lg mb-4">🏆 Итоги команд:</h3>
             <div className="space-y-3">
               {gameState.teams.map((team, index) => (
                 <div
@@ -706,10 +709,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                     className={`p-6 rounded-2xl border-2 transition-all transform ${
                       index === 0 
                         ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40 scale-105' 
-                        : index === 1
-                        ? 'bg-gradient-to-br from-gray-500/20 to-slate-500/20 border-gray-400 shadow-lg'
-                        : index === 2
-                        ? 'bg-gradient-to-br from-orange-500/20 to-amber-500/20 border-orange-400 shadow-lg'
                         : 'bg-white/5 border-white/20'
                     }`}
                   >
@@ -731,8 +730,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                             {player.name}
                             {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
                             {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
-                            {index === 1 && <span className="text-xs bg-gradient-to-r from-gray-400 to-slate-500 text-white px-2 py-0.5 rounded font-bold">2⃣</span>}
-                            {index === 2 && <span className="text-xs bg-gradient-to-r from-orange-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">3⃣</span>}
                           </div>
                           <div className="text-sm text-white/70 mt-1">
                             {onTimeLimit ? (
