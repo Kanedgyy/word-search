@@ -118,13 +118,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   };
 
-  // Загружаем onTimeLimit из URL или localStorage
+  // Загружаем onTimeLimit из URL при монтировании
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlParam = urlParams.get('onTimeLimit');
     if (urlParam === 'true') {
       setOnTimeLimit(true);
+    } else if (urlParam === 'false') {
+      setOnTimeLimit(false);
     } else {
+      // Если нет в URL, проверяем localStorage
       const saved = localStorage.getItem(`session_${sessionId}_onTimeLimit`);
       if (saved) {
         setOnTimeLimit(JSON.parse(saved));
@@ -142,11 +145,12 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
   // Таймер для режима onTimeLimit
   useEffect(() => {
-    if (onTimeLimit && gameState?.status === 'in_progress' && gameState.startTime) {
+    if (onTimeLimit && gameState?.status === 'in_progress' && gameState.endTime) {
+      // Вычисляем время окончания игры из endTime (который устанавливается сервером при старте)
+      const endTime = new Date(gameState.endTime);
+      
       const timer = setInterval(() => {
         const now = new Date();
-        const endTime = new Date(gameState.startTime!);
-        endTime.setSeconds(endTime.getSeconds() + gameState.duration);
         const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
         setTimeRemaining(remaining);
         
@@ -162,7 +166,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     } else {
       setTimeRemaining(0);
     }
-  }, [onTimeLimit, gameState?.status, gameState?.startTime, gameState?.duration, refetch]);
+  }, [onTimeLimit, gameState?.status, gameState?.endTime, refetch]);
 
   const submitWordMutation = trpc.game.submitWord.useMutation();
   const startGameMutation = trpc.game.startGame.useMutation();
@@ -192,13 +196,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     },
   });
 
-  // Загружаем onTimeLimit из URL или localStorage
-  useEffect(() => {
-    if (gameState?.rematchSessionId && !showRematchBanner) {
-      setShowRematchBanner(true);
-    }
-  }, [gameState?.rematchSessionId]);
-
   const handleJoinRematch = async () => {
     if (!gameState?.rematchSessionId) return;
     try {
@@ -206,7 +203,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         sessionId: gameState.rematchSessionId,
         playerName: playerName || 'Игрок',
       });
-      router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}`);
+      router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
     } catch (err: any) {
       setMessage('Ошибка присоединения к реваншу: ' + err.message);
     }
@@ -649,14 +646,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
               🏆 {onTimeLimit ? 'Итоги игры на время 🏆' : 'Итоги игры 🏆'}
             </h2>
-            
-            {onTimeLimit && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg text-center">
-                <p className="text-gray-700">
-                  <strong>Победил тот, кто угадал больше слов за {gameState.duration / 60} минут!</strong>
-                </p>
-              </div>
-            )}
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gameState.players

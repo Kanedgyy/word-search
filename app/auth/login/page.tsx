@@ -32,6 +32,7 @@ export default function LoginPage() {
       // Сохраняем данные пользователя
       localStorage.setItem('userId', data.userId);
       localStorage.setItem('playerName', data.name);
+      localStorage.setItem('playerColor', '#4ECDC4');
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');

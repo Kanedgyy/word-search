@@ -12,20 +12,27 @@ export default function Home() {
   const [gameMode, setGameMode] = useState<'individual' | 'team'>('individual');
   const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [error, setError] = useState('');
-  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
-  const [createdPlayerId, setCreatedPlayerId] = useState<string>('');
-  const [createdColor, setCreatedColor] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
-  // Загружаем сохранённое имя при монтировании
+  // Проверка авторизации при монтировании
   useEffect(() => {
-    const savedName = localStorage.getItem('playerName');
-    if (savedName) {
-      setPlayerName(savedName);
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('playerName');
+    if (!userId || !userName) {
+      router.push('/auth/login');
+    } else {
+      setPlayerName(userName);
     }
-  }, []);
+  }, [router]);
 
-  // Используем tRPC клиент для вызова процедур
+  const handleLogout = () => {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('playerName');
+    localStorage.removeItem('playerColor');
+    localStorage.removeItem('playerId');
+    router.push('/auth/login');
+  };
+
   const createSessionMutation = trpc.game.createSession.useMutation();
   const joinSessionMutation = trpc.game.joinSession.useMutation();
 
@@ -51,43 +58,17 @@ export default function Home() {
           playerName 
         });
         
-        setCreatedSessionId(newSessionId);
-        setCreatedPlayerId(joinData.playerId);
-        setCreatedColor(joinData.color);
+        // Сохраняем данные игрока
+        localStorage.setItem('playerId', joinData.playerId);
+        localStorage.setItem('playerColor', joinData.color);
         
-        // Сохраняем onTimeLimit для сессии в URL
+        // Сразу переходим в игру с onTimeLimit в URL
         const url = `/game/${newSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`;
         router.push(url);
-        return;
       }
     } catch (err: any) {
       setError('Ошибка создания игры: ' + (err.message || 'Неизвестная ошибка'));
       console.error(err);
-    }
-  };
-
-  const handleEnterGame = () => {
-    if (createdSessionId && createdPlayerId) {
-      const url = `/game/${createdSessionId}?playerId=${createdPlayerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(createdColor)}&onTimeLimit=${onTimeLimit}`;
-      router.push(url);
-    }
-  };
-
-  const handleCopySessionId = async () => {
-    if (!createdSessionId) return;
-    try {
-      await navigator.clipboard.writeText(createdSessionId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = createdSessionId;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -119,192 +100,137 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-fade-in">
-        {/* Ссылки на регистрацию/вход */}
+        {/* Кнопка выхода */}
         <div className="flex justify-between items-center mb-6">
-          <Link href="/auth/login" className="text-sm text-purple-600 hover:underline">
-            Войти
-          </Link>
-          <Link href="/auth/register" className="text-sm text-purple-600 hover:underline">
-            Зарегистрироваться
-          </Link>
+          <button
+            onClick={handleLogout}
+            className="text-sm text-red-600 hover:underline"
+          >
+            Выйти из аккаунта
+          </button>
+          <div className="text-sm text-gray-600">
+            👤 {playerName}
+          </div>
         </div>
 
-        {/* Экран созданной сессии */}
-        {createdSessionId ? (
-          <div className="text-center">
-            <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Игра создана!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Поделитесь ID с друзьями, чтобы они присоединились
-            </p>
+        <>
+          <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
+            🎮 Филворд
+          </h1>
+          <p className="text-center text-gray-600 mb-8">
+            Многопользовательская игра
+          </p>
 
-            {/* ID сессии */}
-            <div className="bg-gray-100 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-1">ID сессии</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 font-mono text-sm text-gray-800 break-all">
-                  {createdSessionId}
-                </code>
-                <button
-                  onClick={handleCopySessionId}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                    copied
-                      ? 'bg-green-500 text-white'
-                      : 'bg-purple-500 text-white hover:bg-purple-600'
-                  }`}
-                >
-                  {copied ? '✓' : '📋'}
-                </button>
-              </div>
-              {copied && (
-                <p className="text-green-600 text-xs mt-1">ID скопирован!</p>
-              )}
+          {/* Выбор режима игры */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Режим игры
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setGameMode('individual')}
+                className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
+                  gameMode === 'individual'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                }`}
+              >
+                <div className="text-lg mb-1">👤</div>
+                <div className="text-sm">Каждый сам за себя</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGameMode('team')}
+                className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
+                  gameMode === 'team'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                }`}
+              >
+                <div className="text-lg mb-1">👥</div>
+                <div className="text-sm">Командный</div>
+              </button>
             </div>
-
-            <button
-              onClick={handleEnterGame}
-              className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-            >
-              🚀 Перейти в игру
-            </button>
           </div>
-        ) : (
-          <>
-            <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
-              🎮 Филворд
-            </h1>
-            <p className="text-center text-gray-600 mb-8">
-              Многопользовательская игра
-            </p>
 
-            {/* Форма ввода имени */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ваше имя
-              </label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Введите ваше имя"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
-                maxLength={20}
-              />
-            </div>
-
-            {/* Выбор режима игры */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Режим игры
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setGameMode('individual')}
-                  className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
-                    gameMode === 'individual'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                  }`}
-                >
-                  <div className="text-lg mb-1">👤</div>
-                  <div className="text-sm">Каждый сам за себя</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGameMode('team')}
-                  className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
-                    gameMode === 'team'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                  }`}
-                >
-                  <div className="text-lg mb-1">👥</div>
-                  <div className="text-sm">Командный</div>
-                </button>
-              </div>
-            </div>
-
-            {/* Переключатель "Игра на время" */}
-            <div className="mb-6">
-              <label className="flex items-center gap-3 cursor-pointer">
+          {/* Переключатель "Игра на время" */}
+          <div className="mb-6">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                onClick={() => setOnTimeLimit(!onTimeLimit)}
+                className={`w-14 h-8 rounded-full transition-all relative ${
+                  onTimeLimit ? 'bg-purple-600' : 'bg-gray-300'
+                }`}
+              >
                 <div
-                  onClick={() => setOnTimeLimit(!onTimeLimit)}
-                  className={`w-14 h-8 rounded-full transition-all relative ${
-                    onTimeLimit ? 'bg-purple-600' : 'bg-gray-300'
+                  className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                    onTimeLimit ? 'left-7' : 'left-1'
                   }`}
-                >
-                  <div
-                    className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
-                      onTimeLimit ? 'left-7' : 'left-1'
-                    }`}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⏱️</span>
-                  <span className="text-sm font-medium text-gray-700">
-                    Игра на время (5 мин)
-                  </span>
-                </div>
-              </label>
-            </div>
-
-            {/* Ошибка */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-                {error}
+                />
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⏱️</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Игра на время (5 мин)
+                </span>
+              </div>
+            </label>
+          </div>
 
-            {/* Кнопка создания игры */}
-            <button
-              onClick={handleCreateGame}
-              className="w-full mb-4 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-            >
-              Создать новую игру
-            </button>
-
-            <div className="flex items-center my-6">
-              <div className="flex-1 border-t border-gray-300"></div>
-              <span className="px-4 text-gray-500 text-sm">или</span>
-              <div className="flex-1 border-t border-gray-300"></div>
+          {/* Ошибка */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
             </div>
+          )}
 
-            {/* Форма присоединения */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ID сессии
-              </label>
-              <input
-                type="text"
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                placeholder="Введите ID сессии"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
-              />
-            </div>
+          {/* Кнопка создания игры */}
+          <button
+            onClick={handleCreateGame}
+            className="w-full mb-4 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+          >
+            Создать новую игру
+          </button>
 
-            <button
-              onClick={handleJoinGame}
-              className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
-            >
-              Присоединиться к игре
-            </button>
+          <div className="flex items-center my-6">
+            <div className="flex-1 border-t border-gray-300"></div>
+            <span className="px-4 text-gray-500 text-sm">или</span>
+            <div className="flex-1 border-t border-gray-300"></div>
+          </div>
 
-            {/* Инструкция */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
-              <p className="font-semibold mb-1">Как играть:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Найдите все слова в сетке 10×10</li>
-                <li>Выделяйте слова мышью</li>
-                <li>Слова могут быть горизонтально, вертикально и по диагонали</li>
-                <li>Побеждает тот, кто найдёт больше слов быстрее</li>
-              </ul>
-            </div>
-          </>
-        )}
+          {/* Форма присоединения */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ID сессии
+            </label>
+            <input
+              type="text"
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
+              placeholder="Введите ID сессии"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+            />
+          </div>
+
+          <button
+            onClick={handleJoinGame}
+            className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
+          >
+            Присоединиться к игре
+          </button>
+
+          {/* Инструкция */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
+            <p className="font-semibold mb-1">Как играть:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Найдите все слова в сетке 10×10</li>
+              <li>Выделяйте слова мышью</li>
+              <li>Слова могут быть горизонтально, вертикально и по диагонали</li>
+              <li>Побеждает тот, кто найдёт больше слов быстрее</li>
+            </ul>
+          </div>
+        </>
       </div>
     </div>
   );

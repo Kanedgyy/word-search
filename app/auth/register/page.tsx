@@ -33,7 +33,8 @@ export default function RegisterPage() {
       // Автоматический вход после регистрации
       localStorage.setItem('userId', data.userId);
       localStorage.setItem('playerName', name);
-      router.push('/');
+      localStorage.setItem('playerColor', '#4ECDC4');
+      router.push('/auth/login');
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
     } finally {
