@@ -143,11 +143,22 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   }, [gameState, playerId]);
 
-  // Таймер для режима onTimeLimit
+  // Таймер для режима onTimeLimit - работает у ВСЕХ игроков
   useEffect(() => {
-    if (onTimeLimit && gameState?.status === 'in_progress' && gameState.endTime) {
-      // Вычисляем время окончания игры из endTime (который устанавливается сервером при старте)
-      const endTime = new Date(gameState.endTime);
+    if (onTimeLimit && gameState?.status === 'in_progress') {
+      // Используем endTime если есть, иначе рассчитываем по duration
+      let endTime: Date;
+      if (gameState.endTime) {
+        endTime = new Date(gameState.endTime);
+      } else if (gameState.startTime && gameState.duration) {
+        // Fallback: если endTime нет, рассчитываем по startTime + duration
+        endTime = new Date(gameState.startTime);
+        endTime.setSeconds(endTime.getSeconds() + gameState.duration);
+      } else {
+        // Если вообще нет данных, не запускаем таймер
+        setTimeRemaining(0);
+        return;
+      }
       
       const timer = setInterval(() => {
         const now = new Date();
@@ -166,7 +177,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     } else {
       setTimeRemaining(0);
     }
-  }, [onTimeLimit, gameState?.status, gameState?.endTime, refetch]);
+  }, [onTimeLimit, gameState?.status, gameState?.endTime, gameState?.startTime, gameState?.duration, refetch]);
 
   const submitWordMutation = trpc.game.submitWord.useMutation();
   const startGameMutation = trpc.game.startGame.useMutation();
@@ -415,21 +426,19 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           
           {gameState.status === 'in_progress' && (
             <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-2 rounded-lg">
-              {onTimeLimit ? (
-                <div className="flex items-center gap-3">
-                  <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
+              <div className="flex items-center gap-3">
+                <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
+                {onTimeLimit && (
                   <div className={`px-3 py-1 rounded-lg font-bold text-lg ${
                     timeRemaining <= 30 ? 'bg-red-500 text-white animate-pulse' : 'bg-white/50'
                   }`}>
                     ⏱️ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
                   </div>
-                </div>
-              ) : (
-                <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
-              )}
+                )}
+              </div>
             </div>
           )}
-          
+
           {gameState.status === 'finished' && (
             <div className="bg-purple-100 border border-purple-400 text-purple-800 px-4 py-2 rounded-lg">
               🏆 Игра завершена! См. результаты ниже.
