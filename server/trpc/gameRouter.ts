@@ -56,6 +56,7 @@ const createSession = publicProcedure
     maxPlayers: z.number().min(2).max(6).default(6),
     duration: z.number().min(60).max(600).default(300),
     gameMode: z.enum(['individual', 'team']).default('individual'),
+    onTimeLimit: z.boolean().default(false),
   }))
   .mutation(async ({ ctx, input }) => {
     const wordList = getRandomWordSubset(12);
@@ -68,6 +69,7 @@ const createSession = publicProcedure
       maxPlayers: input.maxPlayers,
       duration: input.duration,
       gameMode: input.gameMode,
+      onTimeLimit: input.onTimeLimit,
     }).returning();
     
     return {
@@ -77,7 +79,7 @@ const createSession = publicProcedure
       maxPlayers: input.maxPlayers,
       duration: input.duration,
       gameMode: input.gameMode,
-      onTimeLimit: false, // Пока не храним в БД, будет храниться в localStorage
+      onTimeLimit: input.onTimeLimit,
     };
   });
 
@@ -365,6 +367,17 @@ const getSessionState = publicProcedure
       throw new Error('Сессия не найдена');
     }
     
+    // Проверка: если игра на время и время вышло — завершаем игру
+    if (session.status === 'in_progress' && session.onTimeLimit && session.endsAt) {
+      const now = new Date();
+      if (now >= session.endsAt) {
+        await ctx.db.update(gameSessions)
+          .set({ status: 'finished' })
+          .where(eq(gameSessions.id, input.sessionId));
+        session.status = 'finished';
+      }
+    }
+    
     // Получаем всех игроков
     const playersData = await ctx.db.select({
       player: gamePlayers,
@@ -411,12 +424,12 @@ const getSessionState = publicProcedure
       maxPlayers: session.maxPlayers,
       duration: session.duration,
       gameMode: session.gameMode,
+      onTimeLimit: session.onTimeLimit ?? false,
       startTime: session.createdAt,
       endTime: session.endsAt,
       player: currentPlayer,
       teams: calculateTeams(players),
       rematchSessionId: session.rematchSessionId,
-      onTimeLimit: false, // Пока не храним в БД
     };
   });
 

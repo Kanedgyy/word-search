@@ -40,6 +40,7 @@ export default function Home() {
         maxPlayers: 6, 
         duration: 300,
         gameMode,
+        onTimeLimit,
       });
       
       const newSessionId = createData.sessionId;

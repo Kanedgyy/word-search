@@ -56,8 +56,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Ошибка регистрации:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack:', error.stack);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Внутренняя ошибка сервера: ' + (error.message || 'unknown error') },
       { status: 500 }
     );
   }
