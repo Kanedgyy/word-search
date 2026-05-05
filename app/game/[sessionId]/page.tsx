@@ -76,9 +76,9 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   } = trpc.game.getSessionState.useQuery(
     { sessionId, playerId },
     { 
-      refetchInterval: 2000, // Polling каждые 2 секунды
-      enabled: !!sessionId,  // Запускаем даже без playerId — сервер вернёт данные
-      staleTime: 0,          // Всегда свежие данные
+      refetchInterval: 1000, // Polling каждую секунду для быстрой реакции на таймер
+      enabled: !!sessionId,
+      staleTime: 0,
       retry: false,
     }
   );
@@ -151,7 +151,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         setTimeRemaining(remaining);
         
         if (remaining === 0) {
+          console.log('[Timer] Время вышло! Принудительно обновляем игру...');
           clearInterval(timer);
+          // Принудительно обновляем игру чтобы увидеть завершённый статус
+          void refetch();
         }
       }, 1000);
       
@@ -159,7 +162,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     } else {
       setTimeRemaining(0);
     }
-  }, [onTimeLimit, gameState?.status, gameState?.startTime, gameState?.duration]);
+  }, [onTimeLimit, gameState?.status, gameState?.startTime, gameState?.duration, refetch]);
 
   const submitWordMutation = trpc.game.submitWord.useMutation();
   const startGameMutation = trpc.game.startGame.useMutation();
