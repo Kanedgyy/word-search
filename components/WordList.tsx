@@ -28,15 +28,16 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
             <div
               key={word}
               className={`
-                px-4 py-3 rounded-xl text-center font-bold text-lg
-                transition-all duration-300 transform
+                px-3 py-3 rounded-xl text-center font-bold text-sm md:text-lg
+                transition-all duration-300 transform break-words
+                min-h-[3.5rem] flex items-center justify-center
                 ${isFound 
                   ? 'bg-gradient-to-br from-emerald-500/80 to-teal-500/80 text-white scale-95 shadow-lg shadow-emerald-500/30' 
                   : 'bg-white/10 text-white/70 hover:bg-white/20 hover:scale-105'
                 }
               `}
             >
-              {word}
+              <span className="break-words leading-tight">{word}</span>
             </div>
           );
         })}

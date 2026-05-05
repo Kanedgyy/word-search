@@ -395,7 +395,20 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.75s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto">
+      {/* Фиксированные уведомления (не сдвигают контент) */}
+      {message && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+          <div className={`p-4 rounded-xl text-center font-medium animate-fade-in backdrop-blur-sm border shadow-xl ${
+            message.startsWith('✓') 
+              ? 'bg-green-500/90 border-green-400 text-white' 
+              : 'bg-red-500/90 border-red-400 text-white'
+          }`}>
+            {message}
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10 max-w-7xl mx-auto mt-20 md:mt-24">
         {/* Заголовок + ID сессии */}
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -428,17 +441,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             </button>
           </div>
         </header>
-
-        {/* Сообщение */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-xl text-center font-medium animate-fade-in backdrop-blur-sm border ${
-            message.startsWith('✓') 
-              ? 'bg-green-500/20 border-green-400/50 text-green-200' 
-              : 'bg-red-500/20 border-red-400/50 text-red-200'
-          }`}>
-            {message}
-          </div>
-        )}
 
         {/* Статус игры */}
         <div className="mb-8 flex flex-wrap gap-4">
