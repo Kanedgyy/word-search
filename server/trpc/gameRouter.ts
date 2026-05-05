@@ -378,6 +378,12 @@ const getSessionState = publicProcedure
       }
     }
     
+    // Debug logging
+    console.log('[getSessionState] sessionId:', input.sessionId);
+    console.log('[getSessionState] onTimeLimit:', session.onTimeLimit);
+    console.log('[getSessionState] endsAt:', session.endsAt);
+    console.log('[getSessionState] duration:', session.duration);
+    
     // Получаем всех игроков
     const playersData = await ctx.db.select({
       player: gamePlayers,
@@ -432,6 +438,12 @@ const getSessionState = publicProcedure
       rematchSessionId: session.rematchSessionId,
     };
   });
+
+function getSessionStateDebug(session: any) {
+  console.log('[getSessionState] onTimeLimit:', session.onTimeLimit);
+  console.log('[getSessionState] endsAt:', session.endsAt);
+  console.log('[getSessionState] duration:', session.duration);
+}
 
 /**
  * Вычисляет результаты команд
@@ -591,6 +603,7 @@ const addBot = publicProcedure
         maxPlayers: oldSession.maxPlayers,
         duration: oldSession.duration,
         gameMode: oldSession.gameMode,
+        onTimeLimit: oldSession.onTimeLimit ?? false,
       }).returning();
       
       // Записываем ссылку на реванш в старую сессию
@@ -605,6 +618,7 @@ const addBot = publicProcedure
         grid,
         wordList: placedWords,
         gameMode: oldSession.gameMode,
+        onTimeLimit: oldSession.onTimeLimit ?? false,
       };
     });
 

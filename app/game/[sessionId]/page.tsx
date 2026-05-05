@@ -83,6 +83,18 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   );
 
+  // Debug logging для gameState
+  useEffect(() => {
+    if (gameState) {
+      console.log('[GamePage] gameState received:', {
+        status: gameState.status,
+        onTimeLimit: gameState.onTimeLimit,
+        endTime: gameState.endTime,
+        duration: gameState.duration,
+      });
+    }
+  }, [gameState]);
+
   // Состояния
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -122,6 +134,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlParam = urlParams.get('onTimeLimit');
+    console.log('[GamePage] URL params onTimeLimit:', urlParam);
     if (urlParam === 'true') {
       setOnTimeLimit(true);
     } else if (urlParam === 'false') {
@@ -146,15 +159,19 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   // Таймер для режима onTimeLimit - работает у ВСЕХ игроков
   useEffect(() => {
     if (onTimeLimit && gameState?.status === 'in_progress') {
+      console.log('[Timer] onTimeLimit=true, status=in_progress, starting timer...');
       // Используем endTime если есть, иначе рассчитываем по duration
       let endTime: Date;
       if (gameState.endTime) {
+        console.log('[Timer] Using endTime from server:', gameState.endTime);
         endTime = new Date(gameState.endTime);
       } else if (gameState.startTime && gameState.duration) {
+        console.log('[Timer] Using fallback: startTime + duration');
         // Fallback: если endTime нет, рассчитываем по startTime + duration
         endTime = new Date(gameState.startTime);
         endTime.setSeconds(endTime.getSeconds() + gameState.duration);
       } else {
+        console.log('[Timer] No startTime or endTime, cannot start timer');
         // Если вообще нет данных, не запускаем таймер
         setTimeRemaining(0);
         return;
@@ -175,6 +192,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       
       return () => clearInterval(timer);
     } else {
+      console.log('[Timer] onTimeLimit=false or status!=in_progress, stopping timer');
       setTimeRemaining(0);
     }
   }, [onTimeLimit, gameState?.status, gameState?.endTime, gameState?.startTime, gameState?.duration, refetch]);
@@ -209,6 +227,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
   const handleJoinRematch = async () => {
     if (!gameState?.rematchSessionId) return;
+    console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
     try {
       const joinData = await joinSessionMutation.mutateAsync({
         sessionId: gameState.rematchSessionId,
