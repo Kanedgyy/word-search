@@ -2,16 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/drizzle/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email } = await request.json();
 
     // Валидация
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { error: 'Email и пароль обязательны' },
+        { error: 'Email обязателен' },
         { status: 400 }
       );
     }
@@ -23,17 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Неверный email или пароль' },
-        { status: 401 }
-      );
-    }
-
-    // Проверка пароля
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Неверный email или пароль' },
+        { error: 'Пользователь с таким email не найден' },
         { status: 401 }
       );
     }
