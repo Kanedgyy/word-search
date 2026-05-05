@@ -672,7 +672,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               gameMode={gameState.gameMode}
             />
 
-            {/* Список слов (скрываем в реальной игре, но показываем для теста) */}
+            {/* Word list (shown for testing) */}
             {isGameStarted && (
               <WordList
                 words={gameState.wordList}
