@@ -130,23 +130,13 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   };
 
-  // Загружаем onTimeLimit из URL при монтировании
+  // Загружаем onTimeLimit из gameState (придет с сервера)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlParam = urlParams.get('onTimeLimit');
-    console.log('[GamePage] URL params onTimeLimit:', urlParam);
-    if (urlParam === 'true') {
-      setOnTimeLimit(true);
-    } else if (urlParam === 'false') {
-      setOnTimeLimit(false);
-    } else {
-      // Если нет в URL, проверяем localStorage
-      const saved = localStorage.getItem(`session_${sessionId}_onTimeLimit`);
-      if (saved) {
-        setOnTimeLimit(JSON.parse(saved));
-      }
+    if (gameState?.onTimeLimit !== undefined) {
+      console.log('[GamePage] Setting onTimeLimit from gameState:', gameState.onTimeLimit);
+      setOnTimeLimit(gameState.onTimeLimit);
     }
-  }, [sessionId]);
+  }, [gameState?.onTimeLimit]);
 
   // Проверка: исключён ли игрок
   useEffect(() => {
