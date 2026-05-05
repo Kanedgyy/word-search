@@ -98,136 +98,171 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 relative overflow-hidden">
+      {/* Анимированный фон с плавающими элементами */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-md w-full border border-white/20 animate-fade-in">
         {/* Кнопка выхода */}
         <div className="flex justify-between items-center mb-6">
           <button
             onClick={handleLogout}
-            className="text-sm text-red-600 hover:underline"
+            className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-lg transition-all"
           >
-            Выйти из аккаунта
+            ← Выйти
           </button>
-          <div className="text-sm text-gray-600">
-            👤 {playerName}
+          <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
+            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              {playerName.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-white text-sm font-medium">{playerName}</span>
           </div>
         </div>
 
         <>
-          <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
-            🎮 Филворд
-          </h1>
-          <p className="text-center text-gray-600 mb-8">
-            Многопользовательская игра
-          </p>
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-black text-white mb-2 bg-gradient-to-r from-yellow-200 via-pink-200 to-cyan-200 bg-clip-text">
+              🎮 Филворд
+            </h1>
+            <p className="text-white/70 text-sm">Многопользовательская игра слов</p>
+          </div>
 
           {/* Выбор режима игры */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Режим игры
+            <label className="block text-white/90 text-sm font-semibold mb-3">
+              🎯 Режим игры
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setGameMode('individual')}
-                className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
+                className={`py-4 px-4 rounded-xl font-medium transition-all border-2 relative overflow-hidden ${
                   gameMode === 'individual'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    ? 'border-pink-400 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-white shadow-lg shadow-pink-500/25'
+                    : 'border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:border-white/30'
                 }`}
               >
-                <div className="text-lg mb-1">👤</div>
-                <div className="text-sm">Каждый сам за себя</div>
+                <div className="text-2xl mb-1">👤</div>
+                <div className="text-xs font-semibold">Каждый за себя</div>
+                {gameMode === 'individual' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => setGameMode('team')}
-                className={`py-3 px-4 rounded-lg font-medium transition-all border-2 ${
+                className={`py-4 px-4 rounded-xl font-medium transition-all border-2 relative overflow-hidden ${
                   gameMode === 'team'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    ? 'border-cyan-400 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-white shadow-lg shadow-cyan-500/25'
+                    : 'border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:border-white/30'
                 }`}
               >
-                <div className="text-lg mb-1">👥</div>
-                <div className="text-sm">Командный</div>
+                <div className="text-2xl mb-1">👥</div>
+                <div className="text-xs font-semibold">Командный</div>
+                {gameMode === 'team' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+                )}
               </button>
             </div>
           </div>
 
           {/* Переключатель "Игра на время" */}
           <div className="mb-6">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <div
-                onClick={() => setOnTimeLimit(!onTimeLimit)}
-                className={`w-14 h-8 rounded-full transition-all relative ${
-                  onTimeLimit ? 'bg-purple-600' : 'bg-gray-300'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
-                    onTimeLimit ? 'left-7' : 'left-1'
-                  }`}
-                />
+            <button
+              onClick={() => setOnTimeLimit(!onTimeLimit)}
+              className={`w-full py-4 px-5 rounded-xl font-semibold transition-all flex items-center justify-between border-2 ${
+                onTimeLimit
+                  ? 'border-amber-400 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white shadow-lg shadow-amber-500/25'
+                  : 'border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:border-white/30'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⏱️</span>
+                <div className="text-left">
+                  <div className="font-bold">Игра на время</div>
+                  <div className="text-xs opacity-75">5 минут на поиск слов</div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">⏱️</span>
-                <span className="text-sm font-medium text-gray-700">
-                  Игра на время (5 мин)
-                </span>
+              <div className={`w-14 h-8 rounded-full transition-all relative ${
+                onTimeLimit ? 'bg-amber-500' : 'bg-white/30'
+              }`}>
+                <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-all ${
+                  onTimeLimit ? 'left-7' : 'left-1'
+                }`}></div>
               </div>
-            </label>
+            </button>
           </div>
 
           {/* Ошибка */}
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-              {error}
+            <div className="mb-4 p-4 bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/50 text-red-200 rounded-xl text-sm backdrop-blur-sm">
+              ⚠️ {error}
             </div>
           )}
 
           {/* Кнопка создания игры */}
           <button
             onClick={handleCreateGame}
-            className="w-full mb-4 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+            className="w-full mb-4 py-4 px-6 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transform hover:scale-105 relative overflow-hidden group"
           >
-            Создать новую игру
+            <span className="relative z-10">✨ Создать новую игру</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
           </button>
 
           <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-4 text-gray-500 text-sm">или</span>
-            <div className="flex-1 border-t border-gray-300"></div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+            <span className="px-4 text-white/50 text-sm font-medium">или</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
           </div>
 
           {/* Форма присоединения */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ID сессии
+            <label className="block text-white/90 text-sm font-semibold mb-2">
+              🔗 ID сессии
             </label>
             <input
               type="text"
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value)}
               placeholder="Введите ID сессии"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
             />
           </div>
 
           <button
             onClick={handleJoinGame}
-            className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
+            className="w-full py-4 px-6 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transform hover:scale-105 relative overflow-hidden group"
           >
-            Присоединиться к игре
+            <span className="relative z-10">🚀 Присоединиться к игре</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
           </button>
 
           {/* Инструкция */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
-            <p className="font-semibold mb-1">Как играть:</p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Найдите все слова в сетке 10×10</li>
-              <li>Выделяйте слова мышью</li>
-              <li>Слова могут быть горизонтально, вертикально и по диагонали</li>
-              <li>Побеждает тот, кто найдёт больше слов быстрее</li>
+          <div className="mt-6 p-5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+            <p className="text-white/90 font-bold mb-3 flex items-center gap-2">
+              <span>📖</span> Как играть:
+            </p>
+            <ul className="space-y-2 text-xs text-white/70">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-300">•</span>
+                Найдите все слова в сетке 10×10
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-300">•</span>
+                Выделяйте слова мышью по буквам
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-300">•</span>
+                Слова могут быть во всех направлениях
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-300">•</span>
+                Побеждает тот, кто найдёт больше слов быстрее!
+              </li>
             </ul>
           </div>
         </>

@@ -387,59 +387,76 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const gameStatus = gameState.status;
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-900 relative overflow-hidden">
+      {/* Анимированный фон */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.75s' }}></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto">
         {/* Заголовок + ID сессии */}
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-3">
-            🎮 Филворд
-          </h1>
-          <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
-            <span className="text-white/70 text-sm">ID сессии:</span>
-            <code className="text-white font-mono text-base font-semibold tracking-wide">
+        <header className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-4xl font-black text-white bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text">
+              🎮 Филворд
+            </h1>
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {playerName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-white text-sm font-medium">{playerName}</span>
+            </div>
+          </div>
+          
+          <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/20">
+            <span className="text-white/70 text-sm">🔗 ID сессии:</span>
+            <code className="text-cyan-300 font-mono text-base font-bold tracking-wide">
               {sessionId}
             </code>
             <button
               onClick={handleCopySessionId}
-              className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 copied
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-green-500/80 text-white'
                   : 'bg-white/20 text-white hover:bg-white/30'
               }`}
               title="Скопировать ID"
             >
-              {copied ? '✓ Скопировано' : '📋 Копировать'}
+              {copied ? '✓' : '📋'}
             </button>
           </div>
-          <p className="text-white/60 text-sm mt-2">
-            Поделитесь ID с друзьями, чтобы они присоединились
-          </p>
         </header>
 
         {/* Сообщение */}
         {message && (
-          <div className={`mb-4 p-3 rounded-lg text-center font-medium animate-fade-in ${
-            message.startsWith('✓') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          <div className={`mb-6 p-4 rounded-xl text-center font-medium animate-fade-in backdrop-blur-sm border ${
+            message.startsWith('✓') 
+              ? 'bg-green-500/20 border-green-400/50 text-green-200' 
+              : 'bg-red-500/20 border-red-400/50 text-red-200'
           }`}>
             {message}
           </div>
         )}
 
         {/* Статус игры */}
-        <div className="mb-6 flex flex-wrap gap-4">
+        <div className="mb-8 flex flex-wrap gap-4">
           {gameState.status === 'waiting' && (
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg">
-              ⏳ Игра ожидает начала. Ожидаем игроков...
+            <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/50 text-amber-200 px-6 py-3 rounded-xl backdrop-blur-sm">
+              ⏳ Ожидаем начала игры...
             </div>
           )}
           
           {gameState.status === 'in_progress' && (
-            <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-2 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
+            <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/50 text-emerald-200 px-6 py-3 rounded-xl backdrop-blur-sm">
+              <div className="flex items-center gap-4">
+                <span>🎯 Игра идёт!</span>
                 {onTimeLimit && (
-                  <div className={`px-3 py-1 rounded-lg font-bold text-lg ${
-                    timeRemaining <= 30 ? 'bg-red-500 text-white animate-pulse' : 'bg-white/50'
+                  <div className={`px-4 py-2 rounded-xl font-bold text-xl backdrop-blur-sm border ${
+                    timeRemaining <= 30 
+                      ? 'bg-red-500/80 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/50' 
+                      : 'bg-white/20 border-white/30 text-white'
                   }`}>
                     ⏱️ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
                   </div>
@@ -447,52 +464,49 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               </div>
             </div>
           )}
-
+          
           {gameState.status === 'finished' && (
-            <div className="bg-purple-100 border border-purple-400 text-purple-800 px-4 py-2 rounded-lg">
-              🏆 Игра завершена! См. результаты ниже.
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/50 text-purple-200 px-6 py-3 rounded-xl backdrop-blur-sm">
+              🏆 Игра завершена!
             </div>
           )}
         </div>
 
         {/* Режим игры */}
-        <div className="mb-4">
-          <span className="inline-block px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
-            {gameState.gameMode === 'individual' && '👤 Каждый сам за себя'}
-            {gameState.gameMode === 'team' && '👥 Командный режим'}
-            {onTimeLimit && ' ⏱️ На время'}
-          </span>
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/20">
+            {gameState.gameMode === 'individual' && <span>👤 Каждый сам за себя</span>}
+            {gameState.gameMode === 'team' && <span>👥 Командный режим</span>}
+            {onTimeLimit && <span className="ml-2 px-2 py-1 bg-amber-500/50 rounded-full text-xs">⏱️ На время</span>}
+          </div>
         </div>
 
         {/* Баннер реванша */}
         {showRematchBanner && gameState?.rematchSessionId && (
-          <div className="mb-6 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 text-green-800 px-6 py-4 rounded-lg text-center animate-fade-in">
-            <div className="text-lg font-bold mb-2">🔄 Создан реванш!</div>
+          <div className="mb-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/50 text-emerald-200 px-8 py-5 rounded-2xl text-center animate-fade-in backdrop-blur-sm">
+            <div className="text-xl font-bold mb-3">🔄 Создан реванш!</div>
             <div className="text-sm mb-3">
-              Хост создал новую игру. ID сессии: <code className="bg-white px-2 py-0.5 rounded font-mono">{gameState.rematchSessionId}</code>
-            </div>
-            <div className="text-xs mb-3">
-              Скопируйте ID и отправьте друзьям, чтобы они присоединились
+              Хост создал новую игру. ID: <code className="bg-white/10 px-3 py-1 rounded font-mono">{gameState.rematchSessionId}</code>
             </div>
             <button
               onClick={handleJoinRematch}
-              className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-all"
+              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/30"
             >
-              Присоединиться к реваншу
+              🚀 Присоединиться
             </button>
           </div>
         )}
 
         {/* Выбор команды (в командном режиме) */}
         {gameState.status === 'waiting' && gameState.gameMode === 'team' && (
-          <div className="mb-6 bg-white rounded-lg shadow-lg p-4">
-            <h3 className="font-bold text-gray-800 mb-3">Выберите команду:</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-8 bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+            <h3 className="font-bold text-white text-lg mb-4">👥 Выберите команду:</h3>
+            <div className="flex flex-wrap gap-3">
               {[
-                { id: 'red', name: 'Красная', color: 'bg-red-500' },
-                { id: 'blue', name: 'Синяя', color: 'bg-blue-500' },
-                { id: 'green', name: 'Зелёная', color: 'bg-green-500' },
-                { id: 'yellow', name: 'Жёлтая', color: 'bg-yellow-500' },
+                { id: 'red', name: 'Красная', color: 'bg-gradient-to-br from-red-500 to-rose-600', border: 'border-red-400' },
+                { id: 'blue', name: 'Синяя', color: 'bg-gradient-to-br from-blue-500 to-indigo-600', border: 'border-blue-400' },
+                { id: 'green', name: 'Зелёная', color: 'bg-gradient-to-br from-green-500 to-emerald-600', border: 'border-green-400' },
+                { id: 'yellow', name: 'Жёлтая', color: 'bg-gradient-to-br from-yellow-400 to-amber-600', border: 'border-yellow-400' },
               ].map(team => {
                 const currentPlayer = gameState.players.find(p => p.id === playerId);
                 const isSelected = currentPlayer?.team === team.id;
@@ -501,17 +515,20 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                   <button
                     key={team.id}
                     onClick={() => setTeamMutation.mutate({ sessionId, playerId, team: team.id as any })}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    className={`px-6 py-4 rounded-xl font-bold transition-all border-2 relative overflow-hidden ${
                       isSelected
-                        ? `${team.color} text-white shadow-lg`
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? `${team.color} text-white shadow-xl scale-105 ${team.border}`
+                        : 'bg-white/10 text-white/80 hover:bg-white/20 border-white/30'
                     }`}
                   >
-                    {team.name}
+                    <div className="text-lg">{team.name}</div>
                     {teamPlayers.length > 0 && (
-                      <span className="ml-2 text-xs opacity-75">
-                        ({teamPlayers.length})
-                      </span>
+                      <div className="text-xs opacity-75 mt-1">
+                        {teamPlayers.length} игрок{teamPlayers.length === 1 ? '' : 'а'}
+                      </div>
+                    )}
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
                     )}
                   </button>
                 );
@@ -522,23 +539,28 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
         {/* Таблица команд */}
         {gameState.gameMode === 'team' && gameState.teams && gameState.teams.length > 0 && (
-          <div className="mb-6 bg-white rounded-lg shadow-lg p-4">
-            <h3 className="font-bold text-gray-800 mb-3">🏆 Счёт команд:</h3>
-            <div className="space-y-2">
+          <div className="mb-8 bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+            <h3 className="font-bold text-white text-lg mb-4">🏆 Счёт команд:</h3>
+            <div className="space-y-3">
               {gameState.teams.map((team, index) => (
                 <div
                   key={team.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    index === 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                    index === 0 
+                      ? 'bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border-yellow-400 shadow-lg shadow-yellow-500/20 scale-105' 
+                      : 'bg-white/5 border-white/20'
                   }`}
                 >
                   <div>
-                    <span className="font-bold">{team.name}</span>
-                    <span className="text-sm text-gray-500 ml-2">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      {index === 0 && <span className="text-2xl">🥇</span>}
+                      {team.name}
+                    </div>
+                    <div className="text-xs text-white/60 mt-1">
                       {team.players.join(', ')}
-                    </span>
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-800">
+                  <div className="text-3xl font-black text-yellow-300">
                     {team.totalWords}
                   </div>
                 </div>
@@ -546,66 +568,68 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
             </div>
           </div>
         )}
+
         {/* Контролы хоста */}
         {isHost && gameState.status === 'waiting' && (
-          <div className="mb-6 flex flex-wrap gap-3 items-center">
+          <div className="mb-8 flex flex-wrap gap-4 items-center">
             <button
               onClick={handleStartGame}
-              className="px-6 py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-green-500 to-teal-600 text-white hover:shadow-lg"
+              className="px-8 py-4 rounded-xl font-bold transition-all bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white hover:shadow-2xl hover:shadow-emerald-500/40 transform hover:scale-105 relative overflow-hidden group"
             >
-              🚀 Начать игру ({gameState.players.length} {gameState.players.length === 1 ? 'игрок' : 'игроков'})
+              <span className="relative z-10">🚀 Начать игру ({gameState.players.length})</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
             </button>
             
             {gameState.players.length < 6 && !pendingBotDifficulty && (
-              <div className="flex items-center gap-2">
-                <span className="text-white/80 text-sm mr-1">🤖 Добавить бота:</span>
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/20">
+                <span className="text-white/80 text-sm">🤖 Бот:</span>
                 <button
                   onClick={() => handleAddBot('easy')}
-                  className="px-4 py-2 rounded-lg font-medium text-sm bg-green-500/80 text-white hover:bg-green-500 transition-all"
-                  title="Лёгкий: медленный (0.4–1.5с), много ошибок (45%), редко зависает"
+                  className="px-4 py-2 rounded-lg font-semibold text-sm bg-gradient-to-r from-green-500/80 to-emerald-500/80 text-white hover:from-green-500 hover:to-emerald-500 transition-all shadow-lg"
+                  title="Лёгкий: медленный, много ошибок"
                 >
                   🌱 Лёгкий
                 </button>
                 <button
                   onClick={() => handleAddBot('medium')}
-                  className="px-4 py-2 rounded-lg font-medium text-sm bg-yellow-500/80 text-white hover:bg-yellow-500 transition-all"
-                  title="Средний: обычная скорость (0.25–0.9с), половина ошибок (25%)"
+                  className="px-4 py-2 rounded-lg font-semibold text-sm bg-gradient-to-r from-amber-500/80 to-orange-500/80 text-white hover:from-amber-500 hover:to-orange-500 transition-all shadow-lg"
+                  title="Средний: обычная скорость"
                 >
                   ⚡ Средний
                 </button>
                 <button
                   onClick={() => handleAddBot('hard')}
-                  className="px-4 py-2 rounded-lg font-medium text-sm bg-red-500/80 text-white hover:bg-red-500 transition-all"
-                  title="Сложный: быстрый (0.1–0.5с), редко ошибается (8%), знает все слова"
+                  className="px-4 py-2 rounded-lg font-semibold text-sm bg-gradient-to-r from-red-500/80 to-rose-500/80 text-white hover:from-red-500 hover:to-rose-500 transition-all shadow-lg"
+                  title="Сложный: быстрый, мало ошибок"
                 >
                   🔥 Сложный
                 </button>
               </div>
             )}
 
-            {/* Выбор команды для бота (в командном режиме) */}
+            {/* Выбор команды для бота */}
             {pendingBotDifficulty && (
-              <div className="flex items-center gap-2 animate-fade-in">
-                <span className="text-white/80 text-sm mr-1">Выберите команду бота:</span>
+              <div className="flex items-center gap-3 animate-fade-in bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/20">
+                <span className="text-white/80 text-sm">Команда бота:</span>
                 {[
-                  { id: 'red', name: 'Красная', bg: 'bg-red-500' },
-                  { id: 'blue', name: 'Синяя', bg: 'bg-blue-500' },
-                  { id: 'green', name: 'Зелёная', bg: 'bg-green-500' },
-                  { id: 'yellow', name: 'Жёлтая', bg: 'bg-yellow-500' },
+                  { id: 'red', name: 'Красная', bg: 'bg-gradient-to-r from-red-500 to-rose-600' },
+                  { id: 'blue', name: 'Синяя', bg: 'bg-gradient-to-r from-blue-500 to-indigo-600' },
+                  { id: 'green', name: 'Зелёная', bg: 'bg-gradient-to-r from-green-500 to-emerald-600' },
+                  { id: 'yellow', name: 'Жёлтая', bg: 'bg-gradient-to-r from-yellow-400 to-amber-600' },
                 ].map(team => (
                   <button
                     key={team.id}
                     onClick={() => addBotWithTeam(pendingBotDifficulty, team.id)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm ${team.bg} text-white hover:opacity-90 transition-all`}
+                    className={`px-5 py-2 rounded-lg font-bold text-sm ${team.bg} text-white hover:opacity-90 transition-all shadow-lg`}
                   >
                     {team.name}
                   </button>
                 ))}
                 <button
                   onClick={() => setPendingBotDifficulty(null)}
-                  className="px-3 py-2 rounded-lg font-medium text-sm bg-white/20 text-white hover:bg-white/30 transition-all"
+                  className="px-4 py-2 rounded-lg font-semibold text-sm bg-white/20 text-white hover:bg-white/30 transition-all"
                 >
-                  ✕ Отмена
+                  ✕
                 </button>
               </div>
             )}
@@ -660,18 +684,17 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
         {/* Результаты игры */}
         {isGameFinished && (
-          <div className="mt-8 bg-white rounded-lg shadow-lg p-6 animate-fade-in">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
-              🏆 {onTimeLimit ? 'Итоги игры на время 🏆' : 'Итоги игры 🏆'}
+          <div className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 animate-fade-in border border-white/20">
+            <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text">
+              🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
             </h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
               {gameState.players
                 .sort((a, b) => {
                   if (b.wordsFound !== a.wordsFound) {
                     return b.wordsFound - a.wordsFound;
                   }
-                  // При равенстве — кто раньше нашёл первое слово
                   const aTime = a.firstWordTime ?? Infinity;
                   const bTime = b.firstWordTime ?? Infinity;
                   return aTime - bTime;
@@ -679,38 +702,47 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 .map((player, index) => (
                   <div
                     key={player.id}
-                    className={`p-4 rounded-lg border-l-4 ${
-                      index === 0 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-400 shadow-lg' :
-                      'bg-white border-gray-200'
+                    className={`p-6 rounded-2xl border-2 transition-all transform ${
+                      index === 0 
+                        ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40 scale-105' 
+                        : index === 1
+                        ? 'bg-gradient-to-br from-gray-500/20 to-slate-500/20 border-gray-400 shadow-lg'
+                        : index === 2
+                        ? 'bg-gradient-to-br from-orange-500/20 to-amber-500/20 border-orange-400 shadow-lg'
+                        : 'bg-white/5 border-white/20'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {index === 0 && (
-                          <div className="text-3xl">🏆</div>
-                        )}
-                        <div 
-                          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
-                          style={{ backgroundColor: player.color }}
-                        >
-                          {player.name.charAt(0).toUpperCase()}
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          {index === 0 && (
+                            <div className="absolute -top-2 -left-2 text-4xl animate-bounce">👑</div>
+                          )}
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg border-4 border-white/30"
+                            style={{ backgroundColor: player.color }}
+                          >
+                            {player.name.charAt(0).toUpperCase()}
+                          </div>
                         </div>
                         <div>
-                          <div className="font-bold text-gray-800 flex items-center gap-2">
+                          <div className="font-bold text-white text-lg flex items-center gap-2">
                             {player.name}
-                            {player.isBot && <span className="text-xs text-gray-500">(бот)</span>}
-                            {index === 0 && <span className="text-xs bg-yellow-400 text-white px-2 py-0.5 rounded">Победитель</span>}
+                            {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
+                            {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
+                            {index === 1 && <span className="text-xs bg-gradient-to-r from-gray-400 to-slate-500 text-white px-2 py-0.5 rounded font-bold">2⃣</span>}
+                            {index === 2 && <span className="text-xs bg-gradient-to-r from-orange-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">3⃣</span>}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-white/70 mt-1">
                             {onTimeLimit ? (
-                              <>Время первого слова: {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
+                              <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
                             ) : (
-                              <>Слова: {player.wordsFound}</>
+                              <>📝 {player.wordsFound} слов</>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="text-3xl font-bold" style={{ color: player.color }}>
+                      <div className="text-4xl font-black" style={{ color: player.color }}>
                         {player.wordsFound}
                       </div>
                     </div>
@@ -718,21 +750,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 ))}
             </div>
 
-            <div className="mt-6 text-center flex flex-wrap gap-4 justify-center">
+            <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
               {!gameState.rematchSessionId && (
                 <button
                   onClick={() => rematchMutation.mutate({ sessionId, playerId })}
                   disabled={rematchMutation.isPending}
-                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                  className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 transform hover:scale-105"
                 >
-                  {rematchMutation.isPending ? '⏳ Создание...' : '🔄 Реванш!'}
+                  {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
                 </button>
               )}
               <button
                 onClick={() => router.push('/')}
-                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all transform hover:scale-105"
               >
-                🏠 Вернуться на главную
+                🏠 Главная
               </button>
             </div>
           </div>

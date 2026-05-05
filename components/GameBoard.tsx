@@ -105,13 +105,13 @@ export function GameBoard({
 
   return (
     <div 
-      className="inline-block bg-white rounded-lg shadow-lg p-4 select-none"
+      className="inline-block bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 select-none border border-white/20"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onContextMenu={handleContextMenu}
     >
       <div 
-        className="grid gap-1"
+        className="grid gap-2"
         style={{ gridTemplateColumns: `repeat(${grid.length}, 1fr)` }}
       >
         {grid.map((row, rowIndex) => (
@@ -125,17 +125,17 @@ export function GameBoard({
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                 className={`
-                  w-10 h-10 flex items-center justify-center 
-                  text-lg font-bold rounded cursor-pointer 
-                  transition-all duration-100
+                  w-12 h-12 md:w-14 md:h-14 flex items-center justify-center 
+                  text-xl md:text-2xl font-black rounded-xl cursor-pointer 
+                  transition-all duration-150 transform
                   ${inPath 
-                    ? 'text-white scale-110 shadow-md' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'text-white scale-110 shadow-xl ring-4 ring-white/30' 
+                    : 'bg-white/10 hover:bg-white/20 hover:scale-105'
                   }
                 `}
                 style={inPath ? { 
                   backgroundColor: playerColor,
-                  opacity: 0.7 + (pathIndex / selectedPath.length) * 0.3
+                  boxShadow: `0 0 20px ${playerColor}66`
                 } : {}}
               >
                 {letter}
@@ -144,10 +144,10 @@ export function GameBoard({
           })
         ))}
       </div>
-      <div className="mt-2 text-center text-sm text-gray-500">
-        Выделено букв: {selectedPath.length}
+      <div className="mt-4 text-center text-sm text-white/70 font-medium">
+        Выделено букв: <span className="text-white font-bold">{selectedPath.length}</span>
         {selectedPath.length >= 3 && (
-          <span className="ml-2 font-medium text-gray-700">
+          <span className="ml-3 text-white font-black text-lg">
             → {selectedPath.map(p => grid[p.row][p.col]).join('')}
           </span>
         )}

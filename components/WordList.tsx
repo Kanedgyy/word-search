@@ -1,7 +1,5 @@
 /**
  * Компонент списка слов
- * 
- * Отображает список слов, которые нужно найти
  */
 
 'use client';
@@ -15,13 +13,14 @@ interface WordListProps {
 }
 
 export function WordList({ words, foundWords, title = 'Найти слова:' }: WordListProps) {
-  // Сортируем слова по алфавиту
   const sortedWords = [...words].sort();
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4">
-      <h3 className="text-lg font-bold mb-3 text-gray-800">{title}</h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+    <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-5 border border-white/20">
+      <h3 className="text-xl font-black mb-4 text-white flex items-center gap-2">
+        📝 {title}
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {sortedWords.map((word) => {
           const isFound = foundWords.has(word);
           
@@ -29,11 +28,11 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
             <div
               key={word}
               className={`
-                px-3 py-2 rounded-lg text-center font-medium
-                transition-all duration-200
+                px-4 py-3 rounded-xl text-center font-bold text-lg
+                transition-all duration-300 transform
                 ${isFound 
-                  ? 'bg-green-100 text-green-700 line-through' 
-                  : 'bg-gray-100 text-gray-700'
+                  ? 'bg-gradient-to-br from-emerald-500/80 to-teal-500/80 text-white scale-95 shadow-lg shadow-emerald-500/30' 
+                  : 'bg-white/10 text-white/70 hover:bg-white/20 hover:scale-105'
                 }
               `}
             >
@@ -43,18 +42,24 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
         })}
       </div>
       
-      {/* Статистика */}
-      <div className="mt-4 pt-3 border-t border-gray-200">
-        <div className="text-sm text-gray-600">
-          Найдено: <span className="font-bold text-green-600">{foundWords.size}</span> из{' '}
-          <span className="font-bold">{words.length}</span>
+      <div className="mt-5 pt-4 border-t border-white/20">
+        <div className="flex items-center justify-between text-white/80 text-sm mb-2">
+          <span>Прогресс:</span>
+          <span className="font-black text-cyan-300">
+            {foundWords.size} / {words.length}
+          </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+        <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
           <div 
-            className="bg-green-500 h-2 rounded-full transition-all duration-300"
+            className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-500 shadow-lg shadow-emerald-400/50"
             style={{ width: `${(foundWords.size / words.length) * 100}%` }}
           />
         </div>
+        {foundWords.size === words.length && (
+          <div className="mt-3 text-center text-amber-300 font-bold animate-pulse">
+            🎉 Все слова найдены!
+          </div>
+        )}
       </div>
     </div>
   );
