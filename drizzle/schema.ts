@@ -18,8 +18,6 @@ export const gameSessions = pgTable('game_sessions', {
   grid: jsonb('grid').$type<string[][]>().notNull(),
   // Режим игры: individual (каждый сам за себя) или team (командный)
   gameMode: varchar('game_mode', { enum: ['individual', 'team'] }).notNull().default('individual'),
-  // Игра на времени (да/нет)
-  onTimeLimit: boolean('on_time_limit').default(false),
   // Статус игры: 'waiting' | 'in_progress' | 'finished'
   status: varchar('status', { enum: ['waiting', 'in_progress', 'finished'] }).notNull().default('waiting'),
   // Максимальное количество игроков

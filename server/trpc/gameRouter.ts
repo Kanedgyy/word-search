@@ -56,13 +56,11 @@ const createSession = publicProcedure
     maxPlayers: z.number().min(2).max(6).default(6),
     duration: z.number().min(60).max(600).default(300),
     gameMode: z.enum(['individual', 'team']).default('individual'),
-    onTimeLimit: z.boolean().default(false),
   }))
   .mutation(async ({ ctx, input }) => {
     const wordList = getRandomWordSubset(12);
     const { grid, placedWords } = generateWordSearch(wordList);
 
-    // Временно не передаём onTimeLimit пока миграция не применена
     const [session] = await ctx.db.insert(gameSessions).values({
       wordList: placedWords,
       grid: grid,
@@ -79,7 +77,6 @@ const createSession = publicProcedure
       maxPlayers: input.maxPlayers,
       duration: input.duration,
       gameMode: input.gameMode,
-      onTimeLimit: input.onTimeLimit,
     };
   });
 
@@ -413,7 +410,6 @@ const getSessionState = publicProcedure
       maxPlayers: session.maxPlayers,
       duration: session.duration,
       gameMode: session.gameMode,
-      onTimeLimit: session.onTimeLimit,
       startTime: session.createdAt,
       endTime: session.endsAt,
       player: currentPlayer,

@@ -31,7 +31,6 @@ interface GameState {
   maxPlayers: number;
   duration: number;
   gameMode: 'individual' | 'team';
-  onTimeLimit: boolean;
   startTime?: number;
   endTime?: number;
   player: {
@@ -92,31 +91,9 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
   }, [gameState, playerId]);
 
-  // Таймер для режима onTimeLimit
-  useEffect(() => {
-    if (gameState?.onTimeLimit && gameState.status === 'in_progress' && gameState.startTime) {
-      const timer = setInterval(() => {
-        const now = new Date();
-        const endTime = new Date(gameState.startTime!);
-        endTime.setSeconds(endTime.getSeconds() + gameState.duration);
-        const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
-        setTimeRemaining(remaining);
-        
-        if (remaining === 0) {
-          clearInterval(timer);
-        }
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    } else {
-      setTimeRemaining(0);
-    }
-  }, [gameState?.onTimeLimit, gameState?.status, gameState?.startTime, gameState?.duration]);
-
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pendingBotDifficulty, setPendingBotDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const lastFoundWordsRef = useRef<Set<string>>(new Set());
 
   // Копирование ID сессии в буфер обмена
@@ -394,18 +371,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           
           {gameState.status === 'in_progress' && (
             <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-2 rounded-lg">
-              {gameState.onTimeLimit ? (
-                <div className="flex items-center gap-3">
-                  <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
-                  <div className={`px-3 py-1 rounded-lg font-bold text-lg ${
-                    timeRemaining <= 30 ? 'bg-red-500 text-white animate-pulse' : 'bg-white/50'
-                  }`}>
-                    ⏱️ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                  </div>
-                </div>
-              ) : (
-                <span>🎯 Игра идёт! Найдите как можно больше слов!</span>
-              )}
+              🎯 Игра идёт! Найдите как можно больше слов!
             </div>
           )}
           
@@ -421,7 +387,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
           <span className="inline-block px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
             {gameState.gameMode === 'individual' && '👤 Каждый сам за себя'}
             {gameState.gameMode === 'team' && '👥 Командный режим'}
-            {gameState.onTimeLimit && '⏱️ На время'}
           </span>
         </div>
 
@@ -623,16 +588,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         {isGameFinished && (
           <div className="mt-8 bg-white rounded-lg shadow-lg p-6 animate-fade-in">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
-              🏆 {gameState.onTimeLimit ? 'Итоги игры на время 🏆' : 'Итоги игры 🏆'}
+              🏆 Итоги игры 🏆
             </h2>
-            
-            {gameState.onTimeLimit && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg text-center">
-                <p className="text-gray-700">
-                  <strong>Победил тот, кто угадал больше слов за {gameState.duration / 60} минут!</strong>
-                </p>
-              </div>
-            )}
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gameState.players
@@ -671,11 +628,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                             {index === 0 && <span className="text-xs bg-yellow-400 text-white px-2 py-0.5 rounded">Победитель</span>}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {gameState.onTimeLimit ? (
-                              <>Время первого слова: {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
-                            ) : (
-                              <>Слова: {player.wordsFound}</>
-                            )}
+                            Слова: {player.wordsFound}
                           </div>
                         </div>
                       </div>
