@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
         
         if (bots.length === 0) {
           console.log(`[after] НЕТ БОТОВ в этой сессии!`);
+          return;
         }
+        
+        // Ждём немного чтобы процесс не завершился сразу
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         for (const bot of bots) {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
@@ -34,6 +38,8 @@ export async function POST(request: NextRequest) {
             console.error(`[after] Ошибка бота ${bot.id}:`, err);
           });
         }
+        
+        console.log(`[after] Все боты запущены!`);
       } catch (err) {
         console.error('[after] Ошибка запуска ботов:', err);
       }

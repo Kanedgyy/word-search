@@ -303,13 +303,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         body: JSON.stringify({ sessionId }),
       });
       const data = await res.json();
-      console.log('[run-bots]', data);
+      console.log('[run-bots response]', data);
       
       if (data.success) {
         setMessage('Игра началась!');
       } else {
         setMessage('Игра началась, но боты не запущены: ' + (data.error || 'ошибка'));
       }
+      
+      // Принудительно обновляем состояние
+      await refetch();
     } catch (err: any) {
       console.error('Ошибка запуска игры:', err);
       setMessage('Ошибка запуска игры: ' + err.message);
