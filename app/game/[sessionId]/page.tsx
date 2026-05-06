@@ -28,6 +28,7 @@ interface GameState {
   wordList: string[];
   players: Player[];
   foundWords: string[];
+  foundCellsMap?: Record<string, string>;
   maxPlayers: number;
   duration: number;
   gameMode: 'individual' | 'team';
@@ -102,8 +103,6 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [lastFoundWord, setLastFoundWord] = useState<string | null>(null);
-  const [lastFoundWordColor, setLastFoundWordColor] = useState<string>(playerColor as string);
   const lastFoundWordsRef = useRef<Set<string>>(new Set());
   
   // Автопереход на реванш для хоста, для остальных — показываем баннер
@@ -251,10 +250,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       );
       if (finder) {
         setMessage(`✓ Найдено слово: ${newWords.join(', ')}`);
-        setLastFoundWord(newWords[0]);
-        setLastFoundWordColor(finder.color);
         setTimeout(() => setMessage(''), 2000);
-        setTimeout(() => setLastFoundWord(null), 1500);
       }
     }
     
@@ -662,8 +658,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 foundWords={new Set(gameState.foundWords)}
                 playerColor={gameState.player?.color || '#FF006E'}
                 onWordSelect={handleWordSelect}
-                lastFoundWord={lastFoundWord}
-                lastFoundWordColor={lastFoundWordColor}
+                foundCellsMap={gameState.foundCellsMap}
               />
             ) : (
               <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-8 text-center border border-white/20">

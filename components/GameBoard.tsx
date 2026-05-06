@@ -22,8 +22,7 @@ interface GameBoardProps {
   foundWords: Set<string>;
   playerColor?: string;
   onWordSelect?: (word: string, path: Coordinate[]) => void;
-  lastFoundWord?: string | null;
-  lastFoundWordColor?: string;
+  foundCellsMap?: Record<string, string>;
 }
 
 export function GameBoard({ 
@@ -31,8 +30,7 @@ export function GameBoard({
   foundWords, 
   playerColor = '#FF006E',
   onWordSelect,
-  lastFoundWord = null,
-  lastFoundWordColor = '#FF006E'
+  foundCellsMap = {}
 }: GameBoardProps) {
   const [selectedPath, setSelectedPath] = useState<Coordinate[]>([]);
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -48,14 +46,9 @@ export function GameBoard({
     return selectedPath.some(p => p.row === row && p.col === col);
   };
 
-  const getFoundWordColor = (row: number, col: number): string | null => {
-    // Проверяем, входит ли клетка в последнее найденное слово
-    if (lastFoundWord) {
-      // Мы не знаем путь последнего слова, поэтому подсвечиваем все буквы
-      // которые есть в последнем найденном слове
-      return lastFoundWordColor;
-    }
-    return null;
+  const getFoundCellColor = (row: number, col: number): string | null => {
+    const key = `${row}-${col}`;
+    return foundCellsMap[key] || null;
   };
 
   const handleMouseDown = (row: number, col: number) => {
@@ -110,9 +103,8 @@ export function GameBoard({
     setIsMouseDown(false);
   };
 
-  // Яркие цвета для игроков
   const getCellBackgroundColor = (row: number, col: number, letterInPath: boolean): string => {
-    const foundColor = getFoundWordColor(row, col);
+    const foundColor = getFoundCellColor(row, col);
     if (foundColor) {
       return foundColor;
     }
@@ -136,7 +128,7 @@ export function GameBoard({
         {grid.map((row, rowIndex) => (
           row.map((letter, colIndex) => {
             const inPath = isInPath(rowIndex, colIndex);
-            const foundColor = getFoundWordColor(rowIndex, colIndex);
+            const foundColor = getFoundCellColor(rowIndex, colIndex);
             const bgColor = getCellBackgroundColor(rowIndex, colIndex, inPath);
             
             return (
@@ -146,13 +138,13 @@ export function GameBoard({
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                 className={`
                   w-12 h-12 md:w-14 md:h-14 flex items-center justify-center 
-                  text-xl md:text-2xl font-black rounded-xl cursor-pointer 
+                  text-xl md:text-2xl rounded-xl cursor-pointer 
                   transition-all duration-200 transform
                   ${inPath 
-                    ? 'text-white scale-110 shadow-xl ring-4 ring-white/30' 
+                    ? 'text-white scale-110 shadow-xl ring-4 ring-white/30 font-black' 
                     : 'hover:scale-105'
                   }
-                  ${foundColor ? 'text-white ring-2 ring-white/50' : 'text-gray-900 font-bold'}
+                  ${foundColor ? 'text-white font-black ring-2 ring-white/50' : 'text-gray-900 font-bold'}
                 `}
                 style={{ 
                   backgroundColor: bgColor,

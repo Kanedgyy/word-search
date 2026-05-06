@@ -466,10 +466,11 @@ const getSessionState = publicProcedure
       .where(eq(gamePlayers.sessionId, input.sessionId))
       .orderBy(asc(gamePlayers.turnOrder));
     
-    // Получаем найденные слова
+    // Получаем найденные слова с путями
     const foundWordsData = await ctx.db.select({
       playerId: foundWords.playerId,
       word: foundWords.word,
+      path: foundWords.path,
     }).from(foundWords)
       .where(eq(foundWords.sessionId, input.sessionId));
     
@@ -490,6 +491,18 @@ const getSessionState = publicProcedure
       team: p.player.team,
     }));
     
+    // Создаём мапу: "row-col" -> цвет игрока, который нашёл слово
+    const foundCellsMap = new Map<string, string>();
+    foundWordsData.forEach(fw => {
+      const player = players.find(p => p.id === fw.playerId);
+      if (player && fw.path) {
+        (fw.path as Array<{ row: number; col: number }>).forEach(pos => {
+          const key = `${pos.row}-${pos.col}`;
+          foundCellsMap.set(key, player.color);
+        });
+      }
+    });
+    
     // Находим текущего игрока
     const currentPlayer = input.playerId
       ? players.find(p => p.id === input.playerId) || null
@@ -502,6 +515,7 @@ const getSessionState = publicProcedure
       wordList: session.wordList,
       players,
       foundWords: foundWordsData.map(w => w.word),
+      foundCellsMap: Object.fromEntries(foundCellsMap),
       maxPlayers: session.maxPlayers,
       duration: session.duration,
       gameMode: session.gameMode,
