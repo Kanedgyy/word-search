@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordByPath } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, desc } from 'drizzle-orm';
 import { GameBot } from '../../server/bot';
 
 // Типы для игроков и сессий
@@ -287,6 +287,9 @@ const submitWord = publicProcedure
       await ctx.db.update(gameSessions)
         .set({ status: 'finished' })
         .where(eq(gameSessions.id, input.sessionId));
+      
+      // Сохраняем статистику матча
+      await saveMatchHistory(ctx, input.sessionId);
     }
     
     // Вычисляем результаты
@@ -300,6 +303,66 @@ const submitWord = publicProcedure
       gameEnded,
     };
   });
+
+/**
+ * Сохраняет статистику матча после завершения игры
+ */
+async function saveMatchHistory(ctx: any, sessionId: string) {
+  const players = await ctx.db.select({
+    player: gamePlayers,
+  }).from(gamePlayers)
+    .where(eq(gamePlayers.sessionId, sessionId));
+  
+  const foundWordsData = await ctx.db.select({
+    playerId: foundWords.playerId,
+  }).from(foundWords)
+    .where(eq(foundWords.sessionId, sessionId));
+  
+  const wordsCountMap = new Map<string, number>();
+  foundWordsData.forEach((w: { playerId: string }) => {
+    wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
+  });
+  
+  const results = players
+    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null } }) => ({
+      id: p.player.id,
+      name: p.player.name,
+      wordsFound: wordsCountMap.get(p.player.id) || 0,
+      isBot: p.player.isBot,
+      firstWordTime: p.player.firstWordTime,
+    }))
+    .sort((a: { wordsFound: number; firstWordTime: number | null }, b: { wordsFound: number; firstWordTime: number | null }) => {
+      if (b.wordsFound !== a.wordsFound) {
+        return b.wordsFound - a.wordsFound;
+      }
+      const aTime = a.firstWordTime ?? Infinity;
+      const bTime = b.firstWordTime ?? Infinity;
+      return aTime - bTime;
+    });
+  
+  const rankMap = new Map<string, number>();
+  results.forEach((r: { id: string }, index: number) => {
+    rankMap.set(r.id, index + 1);
+  });
+  
+  const historyEntries = players.map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
+    const wordsFound = wordsCountMap.get(p.player.id) || 0;
+    const rank = rankMap.get(p.player.id) || (p.player.isBot ? null : 999);
+    
+    return {
+      sessionId,
+      userId: p.player.userId,
+      playerName: p.player.name,
+      wordsFound,
+      firstWordTime: p.player.firstWordTime,
+      rank: p.player.isBot ? null : rank,
+    };
+  });
+
+  if (historyEntries.length > 0) {
+    await ctx.db.insert(matchHistory).values(historyEntries);
+  }
+}
 
 /**
  * Вычисляет результаты игры
@@ -682,6 +745,45 @@ const addBot = publicProcedure
       return { success: true, removedPlayerId: input.targetPlayerId };
     });
 
+  /**
+   * Получает историю матчей игрока
+   */
+  const getMatchHistory = publicProcedure
+    .input(z.object({
+      playerName: z.string().min(1),
+      limit: z.number().min(1).max(50).default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const history = await ctx.db.select({
+        id: matchHistory.id,
+        playerName: matchHistory.playerName,
+        wordsFound: matchHistory.wordsFound,
+        firstWordTime: matchHistory.firstWordTime,
+        rank: matchHistory.rank,
+        recordedAt: matchHistory.recordedAt,
+        sessionId: matchHistory.sessionId,
+      }).from(matchHistory)
+        .where(eq(matchHistory.playerName, input.playerName))
+        .orderBy(desc(matchHistory.recordedAt))
+        .limit(input.limit);
+      
+      // Статистика игрока
+      const totalMatches = history.length;
+      const totalWords = history.reduce((sum, m) => sum + m.wordsFound, 0);
+      const wins = history.filter(m => m.rank === 1).length;
+      const avgWords = totalMatches > 0 ? Math.round(totalWords / totalMatches) : 0;
+      
+      return {
+        history,
+        stats: {
+          totalMatches,
+          totalWords,
+          wins,
+          avgWords,
+        },
+      };
+    });
+
   // Экспортируем router
   export const gameRouter = createTRPCRouter({
     createSession,
@@ -693,6 +795,7 @@ const addBot = publicProcedure
     setTeam,
     rematch,
     removePlayer,
+    getMatchHistory,
   });
 
   export type GameRouter = typeof gameRouter;

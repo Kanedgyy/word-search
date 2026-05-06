@@ -96,6 +96,7 @@ export default function Home() {
       console.error(err);
     }
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 relative overflow-hidden">
@@ -107,21 +108,21 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-md w-full border border-white/20 animate-fade-in">
-        {/* Кнопка выхода */}
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={handleLogout}
-            className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-lg transition-all"
-          >
-            ← Выйти
-          </button>
-          <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
-            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              {playerName.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-white text-sm font-medium">{playerName}</span>
+          {/* Кнопка выхода */}
+          <div className="flex justify-between items-center mb-6">
+            <button
+              onClick={() => router.push('/stats')}
+              className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-lg transition-all"
+            >
+              📊 Статистика
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-lg transition-all"
+            >
+              Выйти →
+            </button>
           </div>
-        </div>
 
         <>
           <div className="text-center mb-8">
@@ -129,6 +130,13 @@ export default function Home() {
               🎮 Филворд
             </h1>
             <p className="text-white/70 text-sm">Многопользовательская игра слов</p>
+            
+            <div className="mt-4 flex items-center justify-center gap-2 bg-white/10 px-4 py-2 rounded-full inline-flex">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {playerName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-white text-sm font-medium">{playerName}</span>
+            </div>
           </div>
 
           {/* Выбор режима игры */}
