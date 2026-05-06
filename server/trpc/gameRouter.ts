@@ -337,12 +337,19 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   }).from(gamePlayers)
     .where(eq(gamePlayers.sessionId, sessionId));
   
-  console.log('[saveMatchHistory] Players:', players.map((p: any) => p.player.name));
+  console.log('[saveMatchHistory] Players:', players.map((p: any) => ({ 
+    id: p.player.id, 
+    name: p.player.name,
+    isBot: p.player.isBot
+  })));
   
   const foundWordsData = await ctx.db.select({
     playerId: foundWords.playerId,
+    word: foundWords.word,
   }).from(foundWords)
     .where(eq(foundWords.sessionId, sessionId));
+  
+  console.log('[saveMatchHistory] Total words found:', foundWordsData.length);
   
   const wordsCountMap = new Map<string, number>();
   foundWordsData.forEach((w: { playerId: string }) => {
@@ -368,6 +375,8 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
       return aTime - bTime;
     });
   
+  console.log('[saveMatchHistory] Results:', results);
+  
   const rankMap = new Map<string, number>();
   results.forEach((r: { id: string }, index: number) => {
     rankMap.set(r.id, index + 1);
@@ -387,11 +396,17 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     };
   });
 
-  console.log('[saveMatchHistory] History entries:', historyEntries);
+  console.log('[saveMatchHistory] History entries to save:', historyEntries);
   
   if (historyEntries.length > 0) {
-    await ctx.db.insert(matchHistory).values(historyEntries);
-    console.log('[saveMatchHistory] Saved', historyEntries.length, 'entries to match_history');
+    try {
+      await ctx.db.insert(matchHistory).values(historyEntries);
+      console.log('[saveMatchHistory] ✓ Saved', historyEntries.length, 'entries to match_history');
+    } catch (err: any) {
+      console.error('[saveMatchHistory] ✗ Error saving history:', err.message);
+    }
+  } else {
+    console.log('[saveMatchHistory] No entries to save');
   }
 }
 
@@ -465,10 +480,15 @@ const getSessionState = publicProcedure
     if (session.status === 'in_progress' && session.onTimeLimit && session.endsAt) {
       const now = new Date();
       if (now >= session.endsAt) {
+        console.log('[getSessionState] Время вышло! Завершаем игру и сохраняем статистику...');
+        
         await ctx.db.update(gameSessions)
           .set({ status: 'finished' })
           .where(eq(gameSessions.id, input.sessionId));
         session.status = 'finished';
+        
+        // Небольшая задержка чтобы боты успели сохранить последние слова
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Сохраняем статистику матча
         await saveMatchHistory(ctx, input.sessionId);
