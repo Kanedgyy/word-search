@@ -308,10 +308,14 @@ const submitWord = publicProcedure
  * Сохраняет статистику матча после завершения игры
  */
 async function saveMatchHistory(ctx: any, sessionId: string) {
+  console.log('[saveMatchHistory] Saving match history for session:', sessionId);
+  
   const players = await ctx.db.select({
     player: gamePlayers,
   }).from(gamePlayers)
     .where(eq(gamePlayers.sessionId, sessionId));
+  
+  console.log('[saveMatchHistory] Players:', players.map((p: any) => p.player.name));
   
   const foundWordsData = await ctx.db.select({
     playerId: foundWords.playerId,
@@ -322,6 +326,8 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   foundWordsData.forEach((w: { playerId: string }) => {
     wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
   });
+  
+  console.log('[saveMatchHistory] Words found per player:', Object.fromEntries(wordsCountMap));
   
   const results = players
     .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null } }) => ({
@@ -359,8 +365,11 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     };
   });
 
+  console.log('[saveMatchHistory] History entries:', historyEntries);
+  
   if (historyEntries.length > 0) {
     await ctx.db.insert(matchHistory).values(historyEntries);
+    console.log('[saveMatchHistory] Saved', historyEntries.length, 'entries to match_history');
   }
 }
 
@@ -438,6 +447,9 @@ const getSessionState = publicProcedure
           .set({ status: 'finished' })
           .where(eq(gameSessions.id, input.sessionId));
         session.status = 'finished';
+        
+        // Сохраняем статистику матча
+        await saveMatchHistory(ctx, input.sessionId);
       }
     }
     
@@ -754,7 +766,8 @@ const addBot = publicProcedure
       limit: z.number().min(1).max(50).default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const history = await ctx.db.select({
+      // Получаем ВСЮ историю и фильтруем на стороне клиента (без учёта регистра)
+      const allHistory = await ctx.db.select({
         id: matchHistory.id,
         playerName: matchHistory.playerName,
         wordsFound: matchHistory.wordsFound,
@@ -763,14 +776,22 @@ const addBot = publicProcedure
         recordedAt: matchHistory.recordedAt,
         sessionId: matchHistory.sessionId,
       }).from(matchHistory)
-        .where(eq(matchHistory.playerName, input.playerName))
-        .orderBy(desc(matchHistory.recordedAt))
-        .limit(input.limit);
+        .orderBy(desc(matchHistory.recordedAt));
+      
+      // Фильтруем по имени (без учёта регистра)
+      const searchName = input.playerName.toLowerCase();
+      const history = allHistory
+        .filter(m => m.playerName.toLowerCase() === searchName)
+        .slice(0, input.limit);
+      
+      console.log('[getMatchHistory] Searching for:', searchName);
+      console.log('[getMatchHistory] Found:', history.length, 'matches');
+      console.log('[getMatchHistory] All players:', [...new Set(allHistory.map((h: any) => h.playerName))]);
       
       // Статистика игрока
       const totalMatches = history.length;
-      const totalWords = history.reduce((sum, m) => sum + m.wordsFound, 0);
-      const wins = history.filter(m => m.rank === 1).length;
+      const totalWords = history.reduce((sum: number, m: { wordsFound: number }) => sum + m.wordsFound, 0);
+      const wins = history.filter((m: { rank: number | null }) => m.rank === 1).length;
       const avgWords = totalMatches > 0 ? Math.round(totalWords / totalMatches) : 0;
       
       return {

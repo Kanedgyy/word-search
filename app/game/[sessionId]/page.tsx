@@ -735,7 +735,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                             {onTimeLimit ? (
                               <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
                             ) : (
-                              <>📝 {player.wordsFound} слов</>
+                              <>📝 слов: {player.wordsFound}</>
                             )}
                           </div>
                         </div>
