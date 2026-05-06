@@ -22,13 +22,17 @@ interface GameBoardProps {
   foundWords: Set<string>;
   playerColor?: string;
   onWordSelect?: (word: string, path: Coordinate[]) => void;
+  lastFoundWord?: string | null;
+  lastFoundWordColor?: string;
 }
 
 export function GameBoard({ 
   grid, 
   foundWords, 
-  playerColor = '#4ECDC4',
-  onWordSelect 
+  playerColor = '#FF006E',
+  onWordSelect,
+  lastFoundWord = null,
+  lastFoundWordColor = '#FF006E'
 }: GameBoardProps) {
   const [selectedPath, setSelectedPath] = useState<Coordinate[]>([]);
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -44,21 +48,27 @@ export function GameBoard({
     return selectedPath.some(p => p.row === row && p.col === col);
   };
 
+  const getFoundWordColor = (row: number, col: number): string | null => {
+    // Проверяем, входит ли клетка в последнее найденное слово
+    if (lastFoundWord) {
+      // Мы не знаем путь последнего слова, поэтому подсвечиваем все буквы
+      // которые есть в последнем найденном слове
+      return lastFoundWordColor;
+    }
+    return null;
+  };
+
   const handleMouseDown = (row: number, col: number) => {
     const clicked: Coordinate = { row, col };
     const existingIndex = selectedPath.findIndex(p => p.row === row && p.col === col);
 
     if (existingIndex !== -1) {
-      // Кликнули на клетку внутри пути — обрезаем до неё
       setSelectedPath(selectedPath.slice(0, existingIndex + 1));
     } else if (selectedPath.length === 0) {
-      // Начинаем новый путь
       setSelectedPath([clicked]);
     } else if (isNeighbor(selectedPath[selectedPath.length - 1], clicked)) {
-      // Добавляем соседнюю клетку
       setSelectedPath([...selectedPath, clicked]);
     } else {
-      // Начинаем новый путь
       setSelectedPath([clicked]);
     }
     setIsMouseDown(true);
@@ -70,7 +80,6 @@ export function GameBoard({
     const last = selectedPath[selectedPath.length - 1];
     const current: Coordinate = { row, col };
 
-    // Если вернулись на предыдущую клетку — убираем последнюю
     if (selectedPath.length >= 2) {
       const prev = selectedPath[selectedPath.length - 2];
       if (prev.row === row && prev.col === col) {
@@ -79,10 +88,8 @@ export function GameBoard({
       }
     }
 
-    // Если уже в пути — игнорируем
     if (isInPath(row, col)) return;
 
-    // Если соседняя — добавляем
     if (isNeighbor(last, current)) {
       setSelectedPath([...selectedPath, current]);
     }
@@ -103,6 +110,18 @@ export function GameBoard({
     setIsMouseDown(false);
   };
 
+  // Яркие цвета для игроков
+  const getCellBackgroundColor = (row: number, col: number, letterInPath: boolean): string => {
+    const foundColor = getFoundWordColor(row, col);
+    if (foundColor) {
+      return foundColor;
+    }
+    if (letterInPath) {
+      return playerColor;
+    }
+    return 'rgba(255, 255, 255, 0.15)';
+  };
+
   return (
     <div 
       className="inline-block bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 select-none border border-white/20"
@@ -117,7 +136,8 @@ export function GameBoard({
         {grid.map((row, rowIndex) => (
           row.map((letter, colIndex) => {
             const inPath = isInPath(rowIndex, colIndex);
-            const pathIndex = selectedPath.findIndex(p => p.row === rowIndex && p.col === colIndex);
+            const foundColor = getFoundWordColor(rowIndex, colIndex);
+            const bgColor = getCellBackgroundColor(rowIndex, colIndex, inPath);
             
             return (
               <div
@@ -127,16 +147,17 @@ export function GameBoard({
                 className={`
                   w-12 h-12 md:w-14 md:h-14 flex items-center justify-center 
                   text-xl md:text-2xl font-black rounded-xl cursor-pointer 
-                  transition-all duration-150 transform
+                  transition-all duration-200 transform
                   ${inPath 
                     ? 'text-white scale-110 shadow-xl ring-4 ring-white/30' 
-                    : 'bg-white/10 hover:bg-white/20 hover:scale-105'
+                    : 'hover:scale-105'
                   }
+                  ${foundColor ? 'text-white ring-2 ring-white/50' : 'text-gray-900 font-bold'}
                 `}
-                style={inPath ? { 
-                  backgroundColor: playerColor,
-                  boxShadow: `0 0 20px ${playerColor}66`
-                } : {}}
+                style={{ 
+                  backgroundColor: bgColor,
+                  boxShadow: inPath || foundColor ? `0 0 20px ${inPath ? playerColor : foundColor}88` : 'none'
+                }}
               >
                 {letter}
               </div>

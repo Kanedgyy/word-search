@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
         );
         
         console.log(`[after] Найдено ${bots.length} ботов для сессии ${sessionId}`);
+        console.log(`[after] Боты:`, bots.map(b => ({ id: b.id, name: b.name, difficulty: b.difficulty })));
+        
+        if (bots.length === 0) {
+          console.log(`[after] НЕТ БОТОВ в этой сессии!`);
+        }
         
         for (const bot of bots) {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';

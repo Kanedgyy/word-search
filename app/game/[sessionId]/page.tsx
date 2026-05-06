@@ -102,6 +102,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [onTimeLimit, setOnTimeLimit] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [lastFoundWord, setLastFoundWord] = useState<string | null>(null);
+  const [lastFoundWordColor, setLastFoundWordColor] = useState<string>(playerColor as string);
   const lastFoundWordsRef = useRef<Set<string>>(new Set());
   
   // Автопереход на реванш для хоста, для остальных — показываем баннер
@@ -245,11 +247,14 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     
     if (newWords.length > 0) {
       const finder = gameState.players.find(p => 
-        newWords.some(word => word === word) // Упрощённая логика
+        newWords.some(word => word === word)
       );
-      if (finder && !finder.isBot) {
+      if (finder) {
         setMessage(`✓ Найдено слово: ${newWords.join(', ')}`);
+        setLastFoundWord(newWords[0]);
+        setLastFoundWordColor(finder.color);
         setTimeout(() => setMessage(''), 2000);
+        setTimeout(() => setLastFoundWord(null), 1500);
       }
     }
     
@@ -294,6 +299,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     
     try {
       await startGameMutation.mutateAsync({ sessionId });
+      
       // Запускаем ботов через Edge API route (фоновые задачи)
       const res = await fetch('/api/run-bots', {
         method: 'POST',
@@ -302,7 +308,12 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       });
       const data = await res.json();
       console.log('[run-bots]', data);
-      setMessage('Игра началась!');
+      
+      if (data.success) {
+        setMessage('Игра началась!');
+      } else {
+        setMessage('Игра началась, но боты не запущены: ' + (data.error || 'ошибка'));
+      }
     } catch (err: any) {
       console.error('Ошибка запуска игры:', err);
       setMessage('Ошибка запуска игры: ' + err.message);
@@ -649,12 +660,14 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               <GameBoard
                 grid={gameState.grid}
                 foundWords={new Set(gameState.foundWords)}
-                playerColor={gameState.player?.color || '#4ECDC4'}
+                playerColor={gameState.player?.color || '#FF006E'}
                 onWordSelect={handleWordSelect}
+                lastFoundWord={lastFoundWord}
+                lastFoundWordColor={lastFoundWordColor}
               />
             ) : (
-              <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-                <p className="text-gray-600">
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-8 text-center border border-white/20">
+                <p className="text-white/70">
                   {gameState.status === 'waiting' 
                     ? 'Ожидание начала игры...' 
                     : 'Игра ещё не началась'}
