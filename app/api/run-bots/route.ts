@@ -40,30 +40,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Игра не в процессе' }, { status: 400 });
       }
       
-      // Запускаем ботов в фоне (не ждём)
-      for (const bot of bots) {
-        const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
-        console.log(`[run-bots] Запуск бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
-        
-        // Запускаем бота в отдельном микротаске
-        queueMicrotask(() => {
-          try {
-            const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
-            gameBot.startFindingWords().catch(err => {
+      // Запускаем ботов в фоне через setTimeout с 0ms (отделяем от текущего контекста)
+      console.log(`[run-bots] Запускаю ботов через setTimeout...`);
+      setTimeout(async () => {
+        try {
+          console.log(`[run-bots] Выполняю ботов для ${sessionId}`);
+          for (const bot of bots) {
+            const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
+            console.log(`[run-bots] Запуск бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
+            
+            try {
+              const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
+              console.log(`[run-bots] Бот ${bot.id} создан, запускаю поиск слов...`);
+              await gameBot.startFindingWords();
+              console.log(`[run-bots] Бот ${bot.id} завершил работу`);
+            } catch (err) {
               console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
-            });
-            console.log(`[run-bots] Бот ${bot.id} запущен через queueMicrotask`);
-          } catch (err) {
-            console.error(`[run-bots] Ошибка создания бота ${bot.id}:`, err);
+            }
           }
-        });
-      }
+          console.log(`[run-bots] Все боты завершили работу!`);
+        } catch (err) {
+          console.error('[run-bots] Ошибка в фоне:', err);
+        }
+      }, 0);
       
-      // Даем немного времени чтобы микротаски начали выполняться
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      console.log(`[run-bots] Все боты запущены!`);
-      return NextResponse.json({ success: true, message: 'Боты запущены', botsCount: bots.length });
+      // Возвращаем ответ сразу, боты работают в фоне
+      console.log(`[run-bots] Ответ отправлен, боты запущены в фоне`);
+      return NextResponse.json({ success: true, message: 'Боты запущены в фоне', botsCount: bots.length });
       
     } catch (innerError: any) {
       console.error('[run-bots] Ошибка внутри:', innerError);
