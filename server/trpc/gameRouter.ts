@@ -38,14 +38,24 @@ interface GameSession {
   endTime?: number;
 }
 
-// Цвета для игроков - яркие и контрастные
+// Цвета для игроков - яркие и контрастные, разные для каждого слота
 const PLAYER_COLORS = [
-  '#FF006E', // Яркий розовый
-  '#8338EC', // Насыщенный фиолетовый
-  '#3A86FF', // Яркий синий
-  '#06D6A0', // Изумрудный
-  '#FFD166', // Солнечный жёлтый
-  '#F72585', // Малиновый
+  '#FF006E', // Яркий розовый - слот 1
+  '#8338EC', // Насыщенный фиолетовый - слот 2
+  '#3A86FF', // Яркий синий - слот 3
+  '#06D6A0', // Изумрудный - слот 4
+  '#FFD166', // Солнечный жёлтый - слот 5
+  '#F72585', // Малиновый - слот 6
+];
+
+// Цвета для ботов - отличные от цветов игроков
+const BOT_COLORS = [
+  '#7209B7', // Глубокий фиолетовый
+  '#560BAD', // Тёмный фиолетовый
+  '#480CA8', // Индиго
+  '#3A0CA3', // Тёмно-синий фиолетовый
+  '#4361EE', // Яркий синий
+  '#4CC9F0', // Циан
 ];
 
 /**
@@ -353,7 +363,7 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   
   const historyEntries = players.map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
     const wordsFound = wordsCountMap.get(p.player.id) || 0;
-    const rank = rankMap.get(p.player.id) || (p.player.isBot ? null : 999);
+    const rank = rankMap.get(p.player.id) || 999;
     
     return {
       sessionId,
@@ -361,7 +371,7 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
       playerName: p.player.name,
       wordsFound,
       firstWordTime: p.player.firstWordTime,
-      rank: p.player.isBot ? null : rank,
+      rank: rank === 999 ? null : rank,
     };
   });
 
@@ -648,7 +658,7 @@ const addBot = publicProcedure
       sessionId: input.sessionId,
       name: input.botName,
       isBot: true,
-      color,
+      color: BOT_COLORS[currentPlayers.length % BOT_COLORS.length],
       turnOrder: currentPlayers.length + 1,
       status: 'joined',
       team: input.team ?? null,
