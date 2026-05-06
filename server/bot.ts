@@ -6,8 +6,8 @@
  */
 
 import { db } from '../lib/db';
-import { gameSessions, gamePlayers, foundWords } from '../drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { gameSessions, gamePlayers, foundWords, matchHistory } from '../drizzle/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 // Типы
 interface Coordinate {
@@ -365,6 +365,13 @@ export class GameBot {
         await db.update(gameSessions)
           .set({ status: 'finished' })
           .where(eq(gameSessions.id, this.sessionId));
+        
+        // Ждём немного чтобы все данные успели записаться
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Сохраняем статистику матча
+        await saveMatchHistory(this.sessionId);
+        
         this.stopFindingWords();
       }
     }
@@ -382,6 +389,99 @@ export class GameBot {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+/**
+ * Сохраняет статистику матча после завершения игры
+ */
+async function saveMatchHistory(sessionId: string) {
+  console.log(`[saveMatchHistory] Saving for session: ${sessionId}`);
+  
+  // Получаем всех игроков сессии
+  const players = await db.select({
+    player: gamePlayers,
+  }).from(gamePlayers)
+    .where(eq(gamePlayers.sessionId, sessionId));
+  
+  // Получаем все найденные слова
+  const foundWordsData = await db.select({
+    playerId: foundWords.playerId,
+  }).from(foundWords)
+    .where(eq(foundWords.sessionId, sessionId));
+  
+  // Считаем слова по игрокам
+  const wordsCountMap = new Map<string, number>();
+  foundWordsData.forEach((w: { playerId: string }) => {
+    wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
+  });
+  
+  console.log(`[saveMatchHistory] Words per player:`, Object.fromEntries(wordsCountMap));
+  
+  // Сортируем игроков по результату
+  const results = players
+    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null } }) => ({
+      id: p.player.id,
+      name: p.player.name,
+      wordsFound: wordsCountMap.get(p.player.id) || 0,
+      isBot: p.player.isBot,
+      firstWordTime: p.player.firstWordTime,
+    }))
+    .sort((a: { wordsFound: number; firstWordTime: number | null }, b: { wordsFound: number; firstWordTime: number | null }) => {
+      if (b.wordsFound !== a.wordsFound) {
+        return b.wordsFound - a.wordsFound;
+      }
+      const aTime = a.firstWordTime ?? Infinity;
+      const bTime = b.firstWordTime ?? Infinity;
+      return aTime - bTime;
+    });
+  
+  const rankMap = new Map<string, number>();
+  results.forEach((r: { id: string }, index: number) => {
+    rankMap.set(r.id, index + 1);
+  });
+  
+  // Фильтруем: сохраняем только игроков, которые нашли хотя бы 1 слово
+  const historyEntries: Array<{
+    sessionId: string;
+    userId: string | null;
+    playerName: string;
+    wordsFound: number;
+    firstWordTime: number | null;
+    rank: number | null;
+  }> = players
+    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
+      const wordsFound = wordsCountMap.get(p.player.id) || 0;
+      const rank = rankMap.get(p.player.id) || 999;
+      
+      // Пропускаем игроков с 0 словами
+      if (wordsFound === 0) {
+        console.log(`[saveMatchHistory] Skipping ${p.player.name} - 0 words`);
+        return null;
+      }
+      
+      return {
+        sessionId,
+        userId: p.player.userId,
+        playerName: p.player.name,
+        wordsFound,
+        firstWordTime: p.player.firstWordTime,
+        rank: rank === 999 ? null : rank,
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+  
+  console.log(`[saveMatchHistory] Entries to save:`, historyEntries);
+  
+  if (historyEntries.length > 0) {
+    try {
+      await db.insert(matchHistory).values(historyEntries);
+      console.log(`[saveMatchHistory] ✓ Saved ${historyEntries.length} entries`);
+    } catch (err: any) {
+      console.error('[saveMatchHistory] ✗ Error:', err.message);
+    }
+  } else {
+    console.log('[saveMatchHistory] No entries to save');
   }
 }
 

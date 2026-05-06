@@ -382,19 +382,28 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     rankMap.set(r.id, index + 1);
   });
   
-  const historyEntries = players.map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
-    const wordsFound = wordsCountMap.get(p.player.id) || 0;
-    const rank = rankMap.get(p.player.id) || 999;
-    
-    return {
-      sessionId,
-      userId: p.player.userId,
-      playerName: p.player.name,
-      wordsFound,
-      firstWordTime: p.player.firstWordTime,
-      rank: rank === 999 ? null : rank,
-    };
-  });
+  // Фильтруем: сохраняем только игроков, которые нашли хотя бы 1 слово
+  const historyEntries = players
+    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
+      const wordsFound = wordsCountMap.get(p.player.id) || 0;
+      const rank = rankMap.get(p.player.id) || 999;
+      
+      // Пропускаем игроков с 0 словами
+      if (wordsFound === 0) {
+        console.log(`[saveMatchHistory] Пропускаем игрока ${p.player.name} - 0 слов`);
+        return null;
+      }
+      
+      return {
+        sessionId,
+        userId: p.player.userId,
+        playerName: p.player.name,
+        wordsFound,
+        firstWordTime: p.player.firstWordTime,
+        rank: rank === 999 ? null : rank,
+      };
+    })
+    .filter((entry: { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } | null): entry is { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } => entry !== null);
 
   console.log('[saveMatchHistory] History entries to save:', historyEntries);
   
@@ -406,7 +415,7 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
       console.error('[saveMatchHistory] ✗ Error saving history:', err.message);
     }
   } else {
-    console.log('[saveMatchHistory] No entries to save');
+    console.log('[saveMatchHistory] No entries to save (all players had 0 words)');
   }
 }
 
