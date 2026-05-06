@@ -294,19 +294,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     }
     
     try {
+      console.log('[handleStartGame] Запускаю игру...');
       await startGameMutation.mutateAsync({ sessionId });
+      console.log('[handleStartGame] Игра запущена, запускаю ботов...');
       
-      // Запускаем ботов через Edge API route (фоновые задачи)
+      // Запускаем ботов через API route
       const res = await fetch('/api/run-bots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       });
       const data = await res.json();
-      console.log('[run-bots response]', data);
+      console.log('[handleStartGame] run-bots ответ:', data);
       
       if (data.success) {
-        setMessage('Игра началась!');
+        setMessage(`Игра началась! Ботов запущено: ${data.botsCount || 0}`);
       } else {
         setMessage('Игра началась, но боты не запущены: ' + (data.error || 'ошибка'));
       }
@@ -314,7 +316,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       // Принудительно обновляем состояние
       await refetch();
     } catch (err: any) {
-      console.error('Ошибка запуска игры:', err);
+      console.error('[handleStartGame] Ошибка запуска игры:', err);
       setMessage('Ошибка запуска игры: ' + err.message);
     }
   };

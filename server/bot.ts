@@ -75,7 +75,8 @@ export class GameBot {
    * Запускает поиск слов
    */
   async startFindingWords() {
-    console.log(`[Бот ${this.playerId}] Начинает поиск слов`);
+    console.log(`[Бот ${this.playerId}] >>> НАЧАЛ поиск слов <<<`);
+    console.log(`[Бот ${this.playerId}] sessionId: ${this.sessionId}, minDelay: ${this.minDelay}ms, maxDelay: ${this.maxDelay}ms, accuracy: ${this.accuracy}`);
     this.isActive = true;
 
     try {
@@ -85,28 +86,37 @@ export class GameBot {
       });
 
       if (!session) {
-        console.error(`[Бот ${this.playerId}] Сессия не найдена`);
+        console.error(`[Бот ${this.playerId}] ✗ Сессия не найдена`);
         return;
       }
 
+      console.log(`[Бот ${this.playerId}] Сессия найдена, статус: ${session.status}`);
+
       if (session.status !== 'in_progress') {
-        console.log(`[Бот ${this.playerId}] Игра ещё не началась или закончилась`);
+        console.log(`[Бот ${this.playerId}] ✗ Игра ещё не началась или закончилась: ${session.status}`);
         return;
       }
 
       // Находим все слова на поле — ВСЕ боты знают все слова
+      console.log(`[Бот ${this.playerId}] Ищу слова на поле...`);
       const allWordsOnGrid = this.findWordsOnGrid(session.grid, session.wordList);
+      console.log(`[Бот ${this.playerId}] Найдено ${allWordsOnGrid.length} слов на поле`);
+      
       const knownWords = shuffleArray(allWordsOnGrid);
-      console.log(`[Бот ${this.playerId}] Знает все ${knownWords.length} слов, ищет в случайном порядке`);
+      console.log(`[Бот ${this.playerId}] ✓ Знает все ${knownWords.length} слов, начинает игру`);
 
+      let iteration = 0;
       // Бесконечный цикл: бот играет, пока игра не закончится
       while (this.isActive) {
+        iteration++;
+        console.log(`[Бот ${this.playerId}] Итерация ${iteration}...`);
+        
         // Проверяем статус игры
         const currentSession = await db.query.gameSessions.findFirst({
           where: eq(gameSessions.id, this.sessionId),
         });
         if (!currentSession || currentSession.status === 'finished') {
-          console.log(`Бот ${this.playerId}: игра закончилась, останавливаюсь`);
+          console.log(`[Бот ${this.playerId}] Игра закончилась, останавливаюсь`);
           break;
         }
 
@@ -124,6 +134,8 @@ export class GameBot {
           }
         }
 
+        console.log(`[Бот ${this.playerId}] Осталось слов: ${remainingWords.length}`);
+
         // Если все слова найдены — выходим
         if (remainingWords.length === 0) {
           console.log(`[Бот ${this.playerId}] Все слова уже найдены`);
@@ -134,16 +146,18 @@ export class GameBot {
         // Бот иногда "зависает" и не ищет в этом раунде
         if (Math.random() < this.skipChance) {
           const skipDelay = this.getRandomDelay();
-          console.log(`[Бот ${this.playerId}] Размышляет...`);
+          console.log(`[Бот ${this.playerId}] Размышляет... ${skipDelay}ms`);
           await this.sleep(skipDelay);
           continue;
         }
 
         // Выбираем СЛУЧАЙНОЕ слово из оставшихся (а не по порядку)
         const wordData = remainingWords[Math.floor(Math.random() * remainingWords.length)];
+        console.log(`[Бот ${this.playerId}] Выбрал слово: ${wordData.word}`);
 
         // Имитируем задержку человека
         const delay = this.getRandomDelay();
+        console.log(`[Бот ${this.playerId}] Жду ${delay}ms перед поиском...`);
         await this.sleep(delay);
 
         // Проверяем статус ещё раз после задержки
@@ -164,20 +178,22 @@ export class GameBot {
           ),
         });
         if (stillNotFound) {
+          console.log(`[Бот ${this.playerId}] Слово уже найдено кем-то другим`);
           continue;
         }
 
         // Отправляем слово (с вероятностью ошибки)
         if (Math.random() < this.accuracy) {
+          console.log(`[Бот ${this.playerId}] ✓ Отправляю слово: ${wordData.word}`);
           await this.submitWord(wordData);
         } else {
-          console.log(`[Бот ${this.playerId}] Ошибка при поиске слова: ${wordData.word}`);
+          console.log(`[Бот ${this.playerId}] ✗ Ошибка при поиске слова: ${wordData.word}`);
         }
       }
 
-      console.log(`[Бот ${this.playerId}] Завершил работу`);
+      console.log(`[Бот ${this.playerId}] Завершил работу после ${iteration} итераций`);
     } catch (error) {
-      console.error(`[Бот ${this.playerId}] Ошибка в работе:`, error);
+      console.error(`[Бот ${this.playerId}] ✗ Ошибка в работе:`, error);
     }
 
     this.isActive = false;
