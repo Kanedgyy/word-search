@@ -7,7 +7,7 @@
 
 import { db } from '../lib/db';
 import { gameSessions, gamePlayers, foundWords, matchHistory } from '../drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 
 // Типы
 interface Coordinate {
@@ -406,6 +406,18 @@ export class GameBot {
  * Сохраняет статистику матча после завершения игры
  */
 async function saveMatchHistory(sessionId: string) {
+  console.log(`[saveMatchHistory] Checking session: ${sessionId}`);
+  
+  // Проверяем, не сохранена ли уже статистика для этой сессии
+  const existingEntries = await db.select({ count: count() })
+    .from(matchHistory)
+    .where(eq(matchHistory.sessionId, sessionId));
+  
+  if (existingEntries && existingEntries.length > 0) {
+    console.log(`[saveMatchHistory] Статистика уже сохранена для сессии: ${sessionId}`);
+    return;
+  }
+  
   console.log(`[saveMatchHistory] Saving for session: ${sessionId}`);
   
   // Получаем всех игроков сессии

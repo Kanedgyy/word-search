@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordByPath } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
-import { eq, asc, and, desc } from 'drizzle-orm';
+import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { GameBot } from '../../server/bot';
 
 // Типы для игроков и сессий
@@ -330,6 +330,16 @@ const submitWord = publicProcedure
  * Сохраняет статистику матча после завершения игры
  */
 async function saveMatchHistory(ctx: any, sessionId: string) {
+  // Проверяем, не сохранена ли уже статистика для этой сессии
+  const existingEntries = await ctx.db.select({ count: count() })
+    .from(matchHistory)
+    .where(eq(matchHistory.sessionId, sessionId));
+  
+  if (existingEntries && existingEntries.length > 0) {
+    console.log('[saveMatchHistory] Статистика уже сохранена для сессии:', sessionId);
+    return;
+  }
+  
   console.log('[saveMatchHistory] Saving match history for session:', sessionId);
   
   const players = await ctx.db.select({
@@ -411,6 +421,12 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     try {
       await ctx.db.insert(matchHistory).values(historyEntries);
       console.log('[saveMatchHistory] ✓ Saved', historyEntries.length, 'entries to match_history');
+      
+      // Устанавливаем флаг чтобы не сохранять повторно
+      await ctx.db.update(gameSessions)
+        .set({ statisticsSaved: true })
+        .where(eq(gameSessions.id, sessionId));
+      console.log('[saveMatchHistory] ✓ Set statisticsSaved = true');
     } catch (err: any) {
       console.error('[saveMatchHistory] ✗ Error saving history:', err.message);
     }

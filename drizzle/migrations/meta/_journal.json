@@ -29,6 +29,13 @@
       "when": 1777990751571,
       "tag": "0003_aspiring_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778112939715,
+      "tag": "0004_equal_vengeance",
+      "breakpoints": true
     }
   ]
 }

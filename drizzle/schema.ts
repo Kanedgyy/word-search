@@ -32,6 +32,8 @@ export const gameSessions = pgTable('game_sessions', {
   endsAt: timestamp('ends_at'),
   // Ссылка на реванш (новая сессия)
   rematchSessionId: uuid('rematch_session_id'),
+  // Статистика уже сохранена (чтобы не дублировать)
+  statisticsSaved: boolean('statistics_saved').default(false),
 });
 
 // Таблица игроков в сессиях
