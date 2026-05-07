@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Сессия не найдена' }, { status: 404 });
     }
     
+    console.log(`[run-bots] Статус сессии: ${session.status}`);
+    
     if (session.status !== 'in_progress') {
       console.log(`[run-bots] Игра не в процессе: ${session.status}`);
       return NextResponse.json({ success: false, error: 'Игра не в процессе' }, { status: 400 });
@@ -67,10 +69,20 @@ export async function POST(request: NextRequest) {
     
     console.log(`[run-bots] Запущено ${botPromises.length} ботов, ждём завершения...`);
     
-    // Ждём пока ВСЕ боты закончат
-    await Promise.all(botPromises);
+    // Ждём пока ВСЕ боты закончат (максимум 60 секунд)
+    const timeout = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        console.log(`[run-bots] Таймаут 60 секунд! Принудительно завершаю...`);
+        reject(new Error('Таймаут'));
+      }, 60000);
+    });
     
-    console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ ===`);
+    try {
+      await Promise.race([Promise.all(botPromises), timeout]);
+      console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ ===`);
+    } catch (err) {
+      console.log(`[run-bots] Ожидание завершено: ${err}`);
+    }
     
     return NextResponse.json({ success: true, message: 'Все боты завершили игру', botsCount: bots.length });
     

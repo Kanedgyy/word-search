@@ -116,13 +116,11 @@ export class GameBot {
       
       const knownWords = shuffleArray(allWordsOnGrid);
       console.log(`[Бот ${this.playerId}] ✓ Знает ${knownWords.length} слов, начинает игру`);
-      console.log(`[Бот ${this.playerId}] Слова:`, knownWords.map(w => w.word));
 
       let iteration = 0;
       // Бесконечный цикл: бот играет, пока игра не закончится
       while (this.isActive) {
         iteration++;
-        console.log(`[Бот ${this.playerId}] === Итерация ${iteration} ===`);
         
         // Проверяем статус игры
         const currentSession = await db.query.gameSessions.findFirst({
@@ -147,12 +145,10 @@ export class GameBot {
           }
         }
 
-        console.log(`[Бот ${this.playerId}] Осталось слов для поиска: ${remainingWords.length}`);
-
         // Если все слова найдены — выходим
         if (remainingWords.length === 0) {
           console.log(`[Бот ${this.playerId}] Все слова уже найдены другими`);
-          await this.sleep(1000);
+          await this.sleep(2000);
           continue;
         }
 
@@ -572,25 +568,25 @@ export class BotFactory {
   ): GameBot {
     const configs = {
       easy: {
-        minDelay: 1600,      // 1.6 секунды минимум
-        maxDelay: 4000,      // 4 секунды максимум
-        accuracy: 0.5,       // 50% точность
+        minDelay: 3200,      // 3.2 секунды минимум
+        maxDelay: 8000,      // 8 секунд максимум
+        accuracy: 0.35,      // 35% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.15,    // 15% шанс "зависнуть"
+        skipChance: 0.25,    // 25% шанс "зависнуть"
       },
       medium: {
-        minDelay: 1000,      // 1 секунда
-        maxDelay: 3000,      // 3 секунды
-        accuracy: 0.6,       // 60% точность
+        minDelay: 2000,      // 2 секунды
+        maxDelay: 6000,      // 6 секунд
+        accuracy: 0.45,      // 45% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.1,     // 10% шанс пропустить ход
+        skipChance: 0.20,    // 20% шанс пропустить ход
       },
       hard: {
-        minDelay: 600,       // 0.6 секунды
-        maxDelay: 2000,      // 2 секунды
-        accuracy: 0.75,      // 75% точность
+        minDelay: 1200,      // 1.2 секунды
+        maxDelay: 4000,      // 4 секунды
+        accuracy: 0.60,      // 60% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.05,    // 5% шанс пропустить ход
+        skipChance: 0.10,    // 10% шанс пропустить ход
       },
     };
 
