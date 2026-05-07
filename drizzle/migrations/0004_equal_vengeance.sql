@@ -1,1 +1,0 @@
-ALTER TABLE "game_sessions" ADD COLUMN "statistics_saved" boolean DEFAULT false;
