@@ -50,9 +50,11 @@ export async function POST(request: NextRequest) {
           and(eq(gamePlayers.sessionId, sessionId), eq(gamePlayers.isBot, true))
         );
         
+        console.log(`[run-bots] Загружено ${freshBots.length} ботов для запуска`);
+        
         for (const bot of freshBots) {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
-          console.log(`[run-bots] Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
+          console.log(`[run-bots] === Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty} ===`);
           
           try {
             const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
             console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
           }
         }
-        console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ ===`);
+        console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ (${freshBots.length} шт) ===`);
       } catch (err) {
         console.error('[run-bots] Ошибка в фоновом процессе:', err);
       }

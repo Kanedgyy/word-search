@@ -89,6 +89,7 @@ export class GameBot {
 
       if (!session) {
         console.error(`[Бот ${this.playerId}] ✗ Сессия не найдена!`);
+        this.isActive = false;
         return;
       }
 
@@ -98,6 +99,7 @@ export class GameBot {
 
       if (session.status !== 'in_progress') {
         console.log(`[Бот ${this.playerId}] ✗ Игра не в процессе: ${session.status}`);
+        this.isActive = false;
         return;
       }
 
@@ -108,6 +110,7 @@ export class GameBot {
       
       if (allWordsOnGrid.length === 0) {
         console.error(`[Бот ${this.playerId}] ✗ НЕ НАШЁЛ НИ ОДНОГО СЛОВА НА ПОЛЕ!`);
+        this.isActive = false;
         return;
       }
       
@@ -198,6 +201,12 @@ export class GameBot {
           await this.submitWord(wordData);
         } else {
           console.log(`[Бот ${this.playerId}] ✗ Ошибка при поиске: "${wordData.word}"`);
+        }
+        
+        // Проверка isActive после submitWord
+        if (!this.isActive) {
+          console.log(`[Бот ${this.playerId}] isActive = false, выходим из цикла`);
+          break;
         }
       }
 
@@ -384,6 +393,15 @@ export class GameBot {
         
         this.stopFindingWords();
       }
+    }
+    
+    // Проверяем статус игры после отправки слова
+    const currentSession = await db.query.gameSessions.findFirst({
+      where: eq(gameSessions.id, this.sessionId),
+    });
+    if (!currentSession || currentSession.status === 'finished') {
+      console.log(`[Бот ${this.playerId}] Игра закончилась после отправки слова`);
+      this.isActive = false;
     }
   }
 
