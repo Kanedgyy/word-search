@@ -38,35 +38,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Игра не в процессе' }, { status: 400 });
     }
     
-    console.log(`[run-bots] === ЗАПУСКАЮ БОТОВ ПРЯМО ЗДЕСЬ ===`);
+    console.log(`[run-bots] === ЗАПУСКАЮ БОТОВ В ФОНЕ ===`);
     
-    // Запускаем ботов синхронно в этом же запросе
-    // Они будут работать в фоне после того как ответ вернётся
-    for (const bot of bots) {
-      const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
-      console.log(`[run-bots] Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
-      
+    // Запускаем ботов в фоне через новый Worker
+    // Используем setTimeout с большой задержкой чтобы гарантировать выполнение после ответа
+    setTimeout(async () => {
+      console.log(`[run-bots] Фоновый процесс запущен для ${sessionId}`);
       try {
-        const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
-        console.log(`[run-bots] Бот ${bot.id} создан, запускаю startFindingWords()`);
+        // Перезагружаем ботов из БД
+        const freshBots = await db.select().from(gamePlayers).where(
+          and(eq(gamePlayers.sessionId, sessionId), eq(gamePlayers.isBot, true))
+        );
         
-        // Запускаем бота - он будет работать асинхронно
-        const botPromise = gameBot.startFindingWords();
-        
-        // Не ждём завершения, но даем боту начать инициализацию
-        await new Promise(resolve => setTimeout(resolve, 100));
-        console.log(`[run-bots] Бот ${bot.id} начал работу`);
-        
+        for (const bot of freshBots) {
+          const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
+          console.log(`[run-bots] Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty}`);
+          
+          try {
+            const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
+            console.log(`[run-bots] Бот ${bot.id} создан, запускаю startFindingWords()`);
+            await gameBot.startFindingWords();
+            console.log(`[run-bots] Бот ${bot.id} завершил работу`);
+          } catch (err) {
+            console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
+          }
+        }
+        console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ ===`);
       } catch (err) {
-        console.error(`[run-bots] Ошибка создания бота ${bot.id}:`, err);
+        console.error('[run-bots] Ошибка в фоновом процессе:', err);
       }
-    }
+    }, 100);
     
-    // Ждём немного чтобы боты успели начать
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    console.log(`[run-bots] === ВСЕ БОТЫ ЗАПУЩЕНЫ ===`);
-    return NextResponse.json({ success: true, message: 'Боты запущены', botsCount: bots.length });
+    // Возвращаем ответ сразу
+    console.log(`[run-bots] Ответ отправлен, боты запущены в фоне`);
+    return NextResponse.json({ success: true, message: 'Боты запущены в фоне', botsCount: bots.length });
     
   } catch (error: any) {
     console.error('[run-bots] Ошибка:', error);
