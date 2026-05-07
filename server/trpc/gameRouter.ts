@@ -421,12 +421,6 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     try {
       await ctx.db.insert(matchHistory).values(historyEntries);
       console.log('[saveMatchHistory] ✓ Saved', historyEntries.length, 'entries to match_history');
-      
-      // Устанавливаем флаг чтобы не сохранять повторно
-      await ctx.db.update(gameSessions)
-        .set({ statisticsSaved: true })
-        .where(eq(gameSessions.id, sessionId));
-      console.log('[saveMatchHistory] ✓ Set statisticsSaved = true');
     } catch (err: any) {
       console.error('[saveMatchHistory] ✗ Error saving history:', err.message);
     }

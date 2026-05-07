@@ -491,7 +491,7 @@ async function saveMatchHistory(sessionId: string) {
         rank: rank === 999 ? null : rank,
       };
     })
-    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    .filter((entry: { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } | null): entry is { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } => entry !== null);
   
   console.log(`[saveMatchHistory] Entries to save:`, historyEntries);
   
