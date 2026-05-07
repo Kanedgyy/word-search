@@ -321,6 +321,7 @@ const submitWord = publicProcedure
       // Сохраняем статистику матча
       console.log(`[submitWord] Вызываю saveMatchHistory...`);
       await saveMatchHistory(ctx, input.sessionId);
+      console.log(`[submitWord] saveMatchHistory завершена`);
     }
     
     // Вычисляем результаты
@@ -530,6 +531,22 @@ const getSessionState = publicProcedure
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Сохраняем статистику матча
+        console.log('[getSessionState] Вызываю saveMatchHistory...');
+        await saveMatchHistory(ctx, input.sessionId);
+        console.log('[getSessionState] saveMatchHistory завершена');
+      }
+    }
+    
+    // Дополнительная проверка: если игра в статусе finished но статистика ещё не сохранена
+    // (например игра закончилась через бота или все слова найдены)
+    if (session.status === 'finished' && input.playerId) {
+      // Проверяем есть ли уже записи в matchHistory
+      const existingEntries = await ctx.db.select({ count: count() })
+        .from(matchHistory)
+        .where(eq(matchHistory.sessionId, input.sessionId));
+      
+      if (existingEntries.length === 0) {
+        console.log('[getSessionState] Игра завершена но статистика не сохранена, сохраняю...');
         await saveMatchHistory(ctx, input.sessionId);
       }
     }

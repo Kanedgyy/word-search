@@ -572,25 +572,25 @@ export class BotFactory {
   ): GameBot {
     const configs = {
       easy: {
-        minDelay: 800,       // 0.8 секунды минимум
-        maxDelay: 2000,      // 2 секунды максимум
-        accuracy: 0.7,       // 70% точность
+        minDelay: 1600,      // 1.6 секунды минимум
+        maxDelay: 4000,      // 4 секунды максимум
+        accuracy: 0.5,       // 50% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.1,     // 10% шанс "зависнуть"
+        skipChance: 0.15,    // 15% шанс "зависнуть"
       },
       medium: {
-        minDelay: 500,       // 0.5 секунды
-        maxDelay: 1500,      // 1.5 секунд
-        accuracy: 0.85,      // 85% точность
+        minDelay: 1000,      // 1 секунда
+        maxDelay: 3000,      // 3 секунды
+        accuracy: 0.6,       // 60% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.05,    // 5% шанс пропустить ход
+        skipChance: 0.1,     // 10% шанс пропустить ход
       },
       hard: {
-        minDelay: 300,       // 0.3 секунды
-        maxDelay: 1000,      // 1 секунда
-        accuracy: 0.95,      // 95% точность
+        minDelay: 600,       // 0.6 секунды
+        maxDelay: 2000,      // 2 секунды
+        accuracy: 0.75,      // 75% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.02,    // 2% шанс пропустить ход
+        skipChance: 0.05,    // 5% шанс пропустить ход
       },
     };
 
