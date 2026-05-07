@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import { TRPCProvider } from "../lib/trpc-provider";
-
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   title: "Филворд — Многопользовательская игра",
@@ -20,8 +14,8 @@ export default function RootLayout({
 }>) {
   
   return (
-    <html lang="ru" className={inter.variable}>
-      <body className={`font-sans ${inter.variable}`}>
+    <html lang="ru">
+      <body className="font-sans">
         <TRPCProvider>
           {children}
         </TRPCProvider>
