@@ -296,14 +296,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     try {
       console.log('[handleStartGame] Запускаю игру...');
       await startGameMutation.mutateAsync({ sessionId });
-      console.log('[handleStartGame] Игра запущена, запускаю ботов...');
+      console.log('[handleStartGame] Игра запущена, статус: in_progress');
       
       // Запускаем ботов через API route
+      console.log('[handleStartGame] Вызываю /api/run-bots...');
       const res = await fetch('/api/run-bots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       });
+      console.log('[handleStartGame] Ответ получен, статус:', res.status);
       const data = await res.json();
       console.log('[handleStartGame] run-bots ответ:', data);
       
