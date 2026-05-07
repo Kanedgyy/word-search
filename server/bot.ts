@@ -341,8 +341,8 @@ export class GameBot {
       path: wordData.path,
     });
 
-    // Ждём немного чтобы данные точно записались
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Ждём чтобы данные точно записались
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Проверяем, нужно ли обновить firstWordTime (первое слово бота)
     const session = await db.query.gameSessions.findFirst({
@@ -381,14 +381,16 @@ export class GameBot {
 
       if (allFound.length >= session.wordList.length) {
         console.log(`[Бот ${this.playerId}] Все слова найдены (${allFound.length}/${session.wordList.length}), завершаем игру`);
+        
+        // Обновляем статус игры
         await db.update(gameSessions)
           .set({ status: 'finished' })
           .where(eq(gameSessions.id, this.sessionId));
         
-        // Ждём немного чтобы все данные успели записаться
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Ждём чтобы все данные успели записаться (важно для параллельных ботов!)
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Сохраняем статистику матча
+        // Сохраняем статистику матча (только ОДИН бот это сделает)
         await saveMatchHistory(this.sessionId);
         
         this.stopFindingWords();
@@ -424,7 +426,7 @@ export class GameBot {
  * Сохраняет статистику матча после завершения игры
  */
 async function saveMatchHistory(sessionId: string) {
-  console.log(`[saveMatchHistory] Checking session: ${sessionId}`);
+  console.log(`[saveMatchHistory] === Проверяю сессию: ${sessionId} ===`);
   
   // Проверяем, не сохранена ли уже статистика для этой сессии
   const existingEntries = await db.select({ count: count() })
@@ -432,11 +434,11 @@ async function saveMatchHistory(sessionId: string) {
     .where(eq(matchHistory.sessionId, sessionId));
   
   if (existingEntries && existingEntries.length > 0) {
-    console.log(`[saveMatchHistory] Статистика уже сохранена для сессии: ${sessionId}`);
+    console.log(`[saveMatchHistory] ✓ Статистика уже сохранена для сессии: ${sessionId}`);
     return;
   }
   
-  console.log(`[saveMatchHistory] Saving for session: ${sessionId}`);
+  console.log(`[saveMatchHistory] Начинаю сохранение для сессии: ${sessionId}`);
   
   // Получаем всех игроков сессии
   const players = await db.select({
@@ -444,11 +446,21 @@ async function saveMatchHistory(sessionId: string) {
   }).from(gamePlayers)
     .where(eq(gamePlayers.sessionId, sessionId));
   
+  console.log(`[saveMatchHistory] Найдено игроков: ${players.length}`);
+  console.log(`[saveMatchHistory] Игроки:`, players.map((p: any) => ({ 
+    id: p.player.id.substring(0, 8), 
+    name: p.player.name,
+    isBot: p.player.isBot
+  })));
+  
   // Получаем все найденные слова
   const foundWordsData = await db.select({
     playerId: foundWords.playerId,
+    word: foundWords.word,
   }).from(foundWords)
     .where(eq(foundWords.sessionId, sessionId));
+  
+  console.log(`[saveMatchHistory] Найдено слов: ${foundWordsData.length}`);
   
   // Считаем слова по игрокам
   const wordsCountMap = new Map<string, number>();
@@ -476,6 +488,8 @@ async function saveMatchHistory(sessionId: string) {
       return aTime - bTime;
     });
   
+  console.log(`[saveMatchHistory] Results:`, results);
+  
   const rankMap = new Map<string, number>();
   results.forEach((r: { id: string }, index: number) => {
     rankMap.set(r.id, index + 1);
@@ -496,10 +510,11 @@ async function saveMatchHistory(sessionId: string) {
       
       // Пропускаем игроков с 0 словами
       if (wordsFound === 0) {
-        console.log(`[saveMatchHistory] Skipping ${p.player.name} - 0 words`);
+        console.log(`[saveMatchHistory] Пропускаем ${p.player.name} - 0 слов`);
         return null;
       }
       
+      console.log(`[saveMatchHistory] Добавляю: ${p.player.name}, ${wordsFound} слов, место: ${rank}`);
       return {
         sessionId,
         userId: p.player.userId,
@@ -511,17 +526,22 @@ async function saveMatchHistory(sessionId: string) {
     })
     .filter((entry: { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } | null): entry is { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } => entry !== null);
   
-  console.log(`[saveMatchHistory] Entries to save:`, historyEntries);
+  console.log(`[saveMatchHistory] Итого записей для сохранения: ${historyEntries.length}`);
   
   if (historyEntries.length > 0) {
     try {
       await db.insert(matchHistory).values(historyEntries);
-      console.log(`[saveMatchHistory] ✓ Saved ${historyEntries.length} entries`);
+      console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей в match_history`);
+      
+      // Проверяем что записали
+      const verifyEntries = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+      console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verifyEntries.length} записей для этой сессии`);
     } catch (err: any) {
-      console.error('[saveMatchHistory] ✗ Error:', err.message);
+      console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
+      console.error(`[saveMatchHistory] ✗ Детали:`, err);
     }
   } else {
-    console.log('[saveMatchHistory] No entries to save');
+    console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
   }
 }
 
