@@ -52,20 +52,29 @@ export async function POST(request: NextRequest) {
         
         console.log(`[run-bots] Загружено ${freshBots.length} ботов для запуска`);
         
-        // Запускаем ВСЕХ ботов ПАРАЛЛЕЛЬНО (не последовательно!)
-        const botPromises = freshBots.map(async (bot) => {
+        // Создаём массив промисов для ВСЕХ ботов
+        const botPromises: Promise<void>[] = [];
+        
+        for (const bot of freshBots) {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
           console.log(`[run-bots] === Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty} ===`);
           
-          try {
-            const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
-            console.log(`[run-bots] Бот ${bot.id} создан, запускаю startFindingWords()`);
-            await gameBot.startFindingWords();
-            console.log(`[run-bots] Бот ${bot.id} завершил работу`);
-          } catch (err) {
-            console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
-          }
-        });
+          // Создаём промис для каждого бота
+          const botPromise = (async () => {
+            try {
+              const gameBot = BotFactory.createBot(sessionId, bot.id, difficulty);
+              console.log(`[run-bots] Бот ${bot.id} создан, запускаю startFindingWords()`);
+              await gameBot.startFindingWords();
+              console.log(`[run-bots] Бот ${bot.id} завершил работу`);
+            } catch (err) {
+              console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
+            }
+          })();
+          
+          botPromises.push(botPromise);
+        }
+        
+        console.log(`[run-bots] Запущено ${botPromises.length} ботов, ждём завершения...`);
         
         // Ждём пока ВСЕ боты закончат (или игра закончится)
         await Promise.all(botPromises);
