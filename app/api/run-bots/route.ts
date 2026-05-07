@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
         
         console.log(`[run-bots] Загружено ${freshBots.length} ботов для запуска`);
         
-        for (const bot of freshBots) {
+        // Запускаем ВСЕХ ботов ПАРАЛЛЕЛЬНО (не последовательно!)
+        const botPromises = freshBots.map(async (bot) => {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
           console.log(`[run-bots] === Создаю бота ${bot.id} (${bot.name}), сложность: ${difficulty} ===`);
           
@@ -64,7 +65,10 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
           }
-        }
+        });
+        
+        // Ждём пока ВСЕ боты закончат (или игра закончится)
+        await Promise.all(botPromises);
         console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ (${freshBots.length} шт) ===`);
       } catch (err) {
         console.error('[run-bots] Ошибка в фоновом процессе:', err);
