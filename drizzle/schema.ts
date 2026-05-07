@@ -96,6 +96,14 @@ export const matchHistory = pgTable('match_history', {
   rank: integer('rank'),
   // Время записи
   recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+}, (table) => {
+  // Уникальный индекс чтобы одна сессия была записана только один раз
+  return {
+    uniqueSessionIdx: {
+      unique: true,
+      on: table.sessionId,
+    },
+  };
 });
 
 // Экспорт всех таблиц для Drizzle

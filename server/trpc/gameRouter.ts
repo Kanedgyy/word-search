@@ -343,13 +343,13 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   console.log(`[saveMatchHistory] === НАЧАЛО сохранения для сессии: ${sessionId} ===`);
   
   // Проверяем, не сохранена ли уже статистика для этой сессии
-  const existingEntries = await ctx.db.select({ count: count() })
+  const existingEntries = await ctx.db.select()
     .from(matchHistory)
     .where(eq(matchHistory.sessionId, sessionId));
   
   console.log(`[saveMatchHistory] Проверка на дублирование: найдено ${existingEntries.length} записей`);
   
-  if (existingEntries && existingEntries.length > 0) {
+  if (existingEntries.length > 0) {
     console.log(`[saveMatchHistory] ✓ Статистика уже сохранена для сессии: ${sessionId}`);
     return;
   }
@@ -440,6 +440,12 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
       const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
       console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
     } catch (err: any) {
+      // Если ошибка уникальности - значит кто-то уже сохранил
+      const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique');
+      if (isUniqueError) {
+        console.log(`[saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
+        return;
+      }
       console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
       console.error(`[saveMatchHistory] ✗ Детали:`, err);
     }
