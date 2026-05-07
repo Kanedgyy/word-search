@@ -431,27 +431,32 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
 
   console.log(`[saveMatchHistory] ИТОГО записей для сохранения: ${historyEntries.length}`);
   
-  if (historyEntries.length > 0) {
-    try {
-      await ctx.db.insert(matchHistory).values(historyEntries);
-      console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей!`);
-      
-      // Проверка что записали
-      const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
-      console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
-    } catch (err: any) {
-      // Если ошибка уникальности - значит кто-то уже сохранил
-      const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique');
-      if (isUniqueError) {
-        console.log(`[saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
-        return;
+    if (historyEntries.length > 0) {
+      try {
+        await ctx.db.insert(matchHistory).values(historyEntries);
+        console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей!`);
+        
+        // Проверка что записали
+        const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+        console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
+      } catch (err: any) {
+        // Если ошибка уникальности - значит кто-то уже сохранил
+        const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique') || err.message?.toLowerCase().includes('already exists');
+        if (isUniqueError) {
+          console.log(`[saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
+          // Дополнительная проверка
+          const verifyAfterError = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+          if (verifyAfterError.length > 0) {
+            console.log(`[saveMatchHistory] ✓ Но проверка показала что статистика всё же сохранена (${verifyAfterError.length} записей)`);
+          }
+          return;
+        }
+        console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
+        console.error(`[saveMatchHistory] ✗ Детали:`, err);
       }
-      console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
-      console.error(`[saveMatchHistory] ✗ Детали:`, err);
+    } else {
+      console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
     }
-  } else {
-    console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
-  }
   
   console.log(`[saveMatchHistory] === КОНЕЦ сохранения ===`);
 }

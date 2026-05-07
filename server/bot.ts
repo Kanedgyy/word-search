@@ -390,13 +390,31 @@ export class GameBot {
         
         console.log(`[Бот ${this.playerId}] Статус игры изменён на finished`);
         
-        // Ждём чтобы все данные успели записаться (важно для параллельных ботов!)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Ждём чтобы все данные успели записаться и другие боты закончили
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Проверяем ещё раз что игра закончена
+        const finalSession = await db.query.gameSessions.findFirst({
+          where: eq(gameSessions.id, this.sessionId),
+        });
+        if (!finalSession || finalSession.status !== 'finished') {
+          console.log(`[Бот ${this.playerId}] Игра не в статусе finished, отменяю сохранение`);
+          this.stopFindingWords();
+          return;
+        }
         
         // Сохраняем статистику матча
         console.log(`[Бот ${this.playerId}] Вызываю saveMatchHistory...`);
         await saveMatchHistory(this.sessionId);
         console.log(`[Бот ${this.playerId}] saveMatchHistory завершена`);
+        
+        // Проверяем что статистика была сохранена
+        const savedEntries = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, this.sessionId));
+        if (savedEntries.length > 0) {
+          console.log(`[Бот ${this.playerId}] ✓ Статистика успешно сохранена (${savedEntries.length} записей)`);
+        } else {
+          console.log(`[Бот ${this.playerId}] ⚠ Статистика НЕ была сохранена!`);
+        }
         
         this.stopFindingWords();
       }
@@ -549,13 +567,19 @@ async function saveMatchHistory(sessionId: string) {
         console.log(`[BOT saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
       } catch (err: any) {
         // Если ошибка уникальности - значит кто-то уже сохранил
-        const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique');
+        const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique') || err.message?.toLowerCase().includes('already exists');
         if (isUniqueError) {
           console.log(`[BOT saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
           return;
         }
         console.error(`[BOT saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
         console.error(`[BOT saveMatchHistory] ✗ Детали:`, err);
+        
+        // Дополнительная проверка после ошибки
+        const verifyAfterError = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+        if (verifyAfterError.length > 0) {
+          console.log(`[BOT saveMatchHistory] ✓ Но проверка показала что статистика всё же сохранена (${verifyAfterError.length} записей)`);
+        }
       }
     } else {
       console.log('[BOT saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
