@@ -11,7 +11,14 @@ export async function POST(request: NextRequest) {
   console.log(`[run-bots] === ПОЛУЧЕН ЗАПРОС для сессии ===`);
   
   try {
-    const { sessionId } = await request.json();
+    const body = await request.json();
+    const { sessionId } = body;
+    
+    if (!sessionId) {
+      console.error('[run-bots] sessionId не указан!');
+      return NextResponse.json({ success: false, error: 'sessionId не указан' }, { status: 400 });
+    }
+    
     console.log(`[run-bots] sessionId: ${sessionId}`);
     
     console.log(`[run-bots] Загружаю ботов для ${sessionId}`);
@@ -59,8 +66,8 @@ export async function POST(request: NextRequest) {
           console.log(`[run-bots] Бот ${bot.id} создан, запускаю startFindingWords()`);
           await gameBot.startFindingWords();
           console.log(`[run-bots] Бот ${bot.id} завершил работу`);
-        } catch (err) {
-          console.error(`[run-bots] Ошибка бота ${bot.id}:`, err);
+        } catch (err: any) {
+          console.error(`[run-bots] Ошибка бота ${bot.id}:`, err?.message || err);
         }
       })();
       
@@ -80,14 +87,19 @@ export async function POST(request: NextRequest) {
     try {
       await Promise.race([Promise.all(botPromises), timeout]);
       console.log(`[run-bots] === ВСЕ БОТЫ ЗАВЕРШИЛИ РАБОТУ ===`);
-    } catch (err) {
-      console.log(`[run-bots] Ожидание завершено: ${err}`);
+    } catch (err: any) {
+      console.log(`[run-bots] Ожидание завершено: ${err?.message || err}`);
     }
     
+    console.log(`[run-bots] Отправляю ответ success=true`);
     return NextResponse.json({ success: true, message: 'Все боты завершили игру', botsCount: bots.length });
     
   } catch (error: any) {
-    console.error('[run-bots] Ошибка:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('[run-bots] КРИТИЧЕСКАЯ ОШИБКА:', error?.message || error);
+    // Возвращаем корректный JSON даже при ошибке
+    return NextResponse.json({ 
+      success: false, 
+      error: error?.message || 'Неизвестная ошибка' 
+    }, { status: 500 });
   }
 }
