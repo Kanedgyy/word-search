@@ -379,19 +379,28 @@ export class GameBot {
         .from(foundWords)
         .where(eq(foundWords.sessionId, this.sessionId));
 
-      if (allFound.length >= session.wordList.length) {
-        console.log(`[Бот ${this.playerId}] Все слова найдены (${allFound.length}/${session.wordList.length}), завершаем игру`);
+      const wordsFoundCount = allFound.length;
+      const totalWords = session.wordList.length;
+      
+      console.log(`[Бот ${this.playerId}] Прогресс: ${wordsFoundCount}/${totalWords} слов найдено`);
+
+      if (wordsFoundCount >= totalWords) {
+        console.log(`[Бот ${this.playerId}] === ВСЕ СЛОВА НАЙДЕНЫ! (${wordsFoundCount}/${totalWords}) ===`);
         
         // Обновляем статус игры
         await db.update(gameSessions)
           .set({ status: 'finished' })
           .where(eq(gameSessions.id, this.sessionId));
         
+        console.log(`[Бот ${this.playerId}] Статус игры изменён на finished`);
+        
         // Ждём чтобы все данные успели записаться (важно для параллельных ботов!)
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Сохраняем статистику матча (только ОДИН бот это сделает)
+        // Сохраняем статистику матча (только ОДИН бот это сделает благодаря проверке на дубликаты)
+        console.log(`[Бот ${this.playerId}] Вызываю saveMatchHistory...`);
         await saveMatchHistory(this.sessionId);
+        console.log(`[Бот ${this.playerId}] saveMatchHistory завершена`);
         
         this.stopFindingWords();
       }
@@ -563,23 +572,23 @@ export class BotFactory {
   ): GameBot {
     const configs = {
       easy: {
-        minDelay: 400,       // 0.4 секунды минимум
-        maxDelay: 1500,      // 1.5 секунд максимум
-        accuracy: 0.55,      // 55% точность
+        minDelay: 800,       // 0.8 секунды минимум
+        maxDelay: 2000,      // 2 секунды максимум
+        accuracy: 0.7,       // 70% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.15,    // 15% шанс "зависнуть"
+        skipChance: 0.1,     // 10% шанс "зависнуть"
       },
       medium: {
-        minDelay: 250,       // 0.25 секунды
-        maxDelay: 900,       // 0.9 секунд
-        accuracy: 0.75,      // 75% точность
+        minDelay: 500,       // 0.5 секунды
+        maxDelay: 1500,      // 1.5 секунд
+        accuracy: 0.85,      // 85% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.08,    // 8% шанс пропустить ход
+        skipChance: 0.05,    // 5% шанс пропустить ход
       },
       hard: {
-        minDelay: 100,       // 0.1 секунда
-        maxDelay: 500,       // 0.5 секунд
-        accuracy: 0.92,      // 92% точность
+        minDelay: 300,       // 0.3 секунды
+        maxDelay: 1000,      // 1 секунда
+        accuracy: 0.95,      // 95% точность
         knownWordsRatio: 1.0,// Знает ВСЕ слова
         skipChance: 0.02,    // 2% шанс пропустить ход
       },
