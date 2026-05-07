@@ -303,14 +303,23 @@ const submitWord = publicProcedure
       eq(foundWords.sessionId, input.sessionId)
     );
     
-    const gameEnded = allFoundWords.length >= session.wordList.length;
+    const wordsFoundCount = allFoundWords.length;
+    const totalWordsInGame = session.wordList.length;
+    const gameEnded = wordsFoundCount >= totalWordsInGame;
+    
+    console.log(`[submitWord] Слово найдено! Всего слов в игре: ${totalWordsInGame}, найдено: ${wordsFoundCount}, gameEnded: ${gameEnded}`);
     
     if (gameEnded) {
+      console.log(`[submitWord] === ВСЕ СЛОВА НАЙДЕНЫ! Завершаем игру ===`);
       await ctx.db.update(gameSessions)
         .set({ status: 'finished' })
         .where(eq(gameSessions.id, input.sessionId));
       
+      // Ждём немного чтобы все данные записались
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       // Сохраняем статистику матча
+      console.log(`[submitWord] Вызываю saveMatchHistory...`);
       await saveMatchHistory(ctx, input.sessionId);
     }
     
@@ -330,25 +339,30 @@ const submitWord = publicProcedure
  * Сохраняет статистику матча после завершения игры
  */
 async function saveMatchHistory(ctx: any, sessionId: string) {
+  console.log(`[saveMatchHistory] === НАЧАЛО сохранения для сессии: ${sessionId} ===`);
+  
   // Проверяем, не сохранена ли уже статистика для этой сессии
   const existingEntries = await ctx.db.select({ count: count() })
     .from(matchHistory)
     .where(eq(matchHistory.sessionId, sessionId));
   
+  console.log(`[saveMatchHistory] Проверка на дублирование: найдено ${existingEntries.length} записей`);
+  
   if (existingEntries && existingEntries.length > 0) {
-    console.log('[saveMatchHistory] Статистика уже сохранена для сессии:', sessionId);
+    console.log(`[saveMatchHistory] ✓ Статистика уже сохранена для сессии: ${sessionId}`);
     return;
   }
   
-  console.log('[saveMatchHistory] Saving match history for session:', sessionId);
+  console.log(`[saveMatchHistory] Начинаю сохранение для сессии: ${sessionId}`);
   
   const players = await ctx.db.select({
     player: gamePlayers,
   }).from(gamePlayers)
     .where(eq(gamePlayers.sessionId, sessionId));
   
-  console.log('[saveMatchHistory] Players:', players.map((p: any) => ({ 
-    id: p.player.id, 
+  console.log(`[saveMatchHistory] Найдено игроков: ${players.length}`);
+  console.log(`[saveMatchHistory] Игроки:`, players.map((p: any) => ({ 
+    id: p.player.id.substring(0, 8), 
     name: p.player.name,
     isBot: p.player.isBot
   })));
@@ -359,14 +373,14 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   }).from(foundWords)
     .where(eq(foundWords.sessionId, sessionId));
   
-  console.log('[saveMatchHistory] Total words found:', foundWordsData.length);
+  console.log(`[saveMatchHistory] Найдено слов в БД: ${foundWordsData.length}`);
   
   const wordsCountMap = new Map<string, number>();
   foundWordsData.forEach((w: { playerId: string }) => {
     wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
   });
   
-  console.log('[saveMatchHistory] Words found per player:', Object.fromEntries(wordsCountMap));
+  console.log(`[saveMatchHistory] Words per player:`, Object.fromEntries(wordsCountMap));
   
   const results = players
     .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null } }) => ({
@@ -385,25 +399,24 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
       return aTime - bTime;
     });
   
-  console.log('[saveMatchHistory] Results:', results);
+  console.log(`[saveMatchHistory] Results:`, results);
   
   const rankMap = new Map<string, number>();
   results.forEach((r: { id: string }, index: number) => {
     rankMap.set(r.id, index + 1);
   });
   
-  // Фильтруем: сохраняем только игроков, которые нашли хотя бы 1 слово
   const historyEntries = players
     .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
       const wordsFound = wordsCountMap.get(p.player.id) || 0;
       const rank = rankMap.get(p.player.id) || 999;
       
-      // Пропускаем игроков с 0 словами
       if (wordsFound === 0) {
         console.log(`[saveMatchHistory] Пропускаем игрока ${p.player.name} - 0 слов`);
         return null;
       }
       
+      console.log(`[saveMatchHistory] Добавляю: ${p.player.name}, ${wordsFound} слов, место: ${rank}`);
       return {
         sessionId,
         userId: p.player.userId,
@@ -415,18 +428,25 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     })
     .filter((entry: { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } | null): entry is { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } => entry !== null);
 
-  console.log('[saveMatchHistory] History entries to save:', historyEntries);
+  console.log(`[saveMatchHistory] ИТОГО записей для сохранения: ${historyEntries.length}`);
   
   if (historyEntries.length > 0) {
     try {
       await ctx.db.insert(matchHistory).values(historyEntries);
-      console.log('[saveMatchHistory] ✓ Saved', historyEntries.length, 'entries to match_history');
+      console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей!`);
+      
+      // Проверка что записали
+      const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+      console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
     } catch (err: any) {
-      console.error('[saveMatchHistory] ✗ Error saving history:', err.message);
+      console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
+      console.error(`[saveMatchHistory] ✗ Детали:`, err);
     }
   } else {
-    console.log('[saveMatchHistory] No entries to save (all players had 0 words)');
+    console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
   }
+  
+  console.log(`[saveMatchHistory] === КОНЕЦ сохранения ===`);
 }
 
 /**
