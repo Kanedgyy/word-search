@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { gameSessions, gamePlayers, matchHistory, foundWords } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -10,25 +10,21 @@ export const maxDuration = 60;
 async function saveMatchHistory(sessionId: string) {
   console.log(`[run-bots saveMatchHistory] === НАЧАЛО сохранения ===`);
   
-  // Проверяем дубликаты
   const existing = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
   if (existing.length > 0) {
     console.log(`[run-bots saveMatchHistory] Статистика уже сохранена`);
     return false;
   }
   
-  // Получаем игроков
   const players = await db.select({ player: gamePlayers }).from(gamePlayers)
     .where(eq(gamePlayers.sessionId, sessionId));
   
-  // Получаем слова
   const words = await db.select({ playerId: foundWords.playerId }).from(foundWords)
     .where(eq(foundWords.sessionId, sessionId));
   
   const wordsCount = new Map<string, number>();
   words.forEach(w => wordsCount.set(w.playerId, (wordsCount.get(w.playerId) || 0) + 1));
   
-  // Сортируем
   const results = players
     .map(p => ({
       id: p.player.id,
@@ -43,7 +39,6 @@ async function saveMatchHistory(sessionId: string) {
   
   const rankMap = new Map(results.map((r, i) => [r.id, i + 1]));
   
-  // Фильтруем и сохраняем
   const entries = players
     .map(p => {
       const wf = wordsCount.get(p.player.id) || 0;
@@ -73,7 +68,7 @@ async function saveMatchHistory(sessionId: string) {
       return false;
     }
   }
-    
+  
   return false;
 }
 
@@ -103,7 +98,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Ботов нет', botsCount: 0 });
     }
     
-    // Проверяем что игра в процессе
     const session = await db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, sessionId)
     });
@@ -123,7 +117,6 @@ export async function POST(request: NextRequest) {
     console.log(`[run-bots] === ЗАПУСКАЮ ВСЕХ БОТОВ ===`);
     console.log(`[run-bots] Количество ботов: ${bots.length}`);
     
-    // Запускаем ВСЕХ ботов ПАРАЛЛЕЛЬНО и ЖДЁМ завершения
     const botPromises: Promise<void>[] = [];
     
     for (const bot of bots) {
@@ -146,7 +139,6 @@ export async function POST(request: NextRequest) {
     
     console.log(`[run-bots] Запущено ${botPromises.length} ботов, ждём завершения...`);
     
-    // Ждём пока ВСЕ боты закончат (максимум 60 секунд)
     const timeout = new Promise<void>((_, reject) => {
       setTimeout(() => {
         console.log(`[run-bots] Таймаут 60 секунд! Принудительно завершаю...`);
@@ -161,15 +153,21 @@ export async function POST(request: NextRequest) {
       console.log(`[run-bots] Ожидание завершено: ${err?.message || err}`);
     }
     
-    // Проверяем статус игры после завершения ботов
     const finalSession = await db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, sessionId)
     });
     
-    if (finalSession && finalSession.status === 'finished') {
-      console.log(`[run-bots] Игра завершена, проверяю статистику...`);
+    if (finalSession) {
+      // Завершаем игру если ещё не завершена
+      if (finalSession.status !== 'finished') {
+        await db.update(gameSessions)
+          .set({ status: 'finished' })
+          .where(eq(gameSessions.id, sessionId));
+        console.log(`[run-bots] Игра завершена принудительно`);
+      }
       
-      // Проверяем есть ли уже записи в matchHistory
+      console.log(`[run-bots] Проверяю статистику...`);
+      
       const existingEntries = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
       
       if (existingEntries.length === 0) {
@@ -180,7 +178,7 @@ export async function POST(request: NextRequest) {
         console.log(`[run-bots] Статистика уже сохранена (${existingEntries.length} записей)`);
       }
     } else {
-      console.log(`[run-bots] Игра не завершена или сессия не найдена`);
+      console.log(`[run-bots] Сессия не найдена`);
     }
     
     console.log(`[run-bots] Отправляю ответ success=true`);
