@@ -4,7 +4,7 @@ import { useEffect, useState, use, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '../../../lib/trpc-client';
 import { GameBoard } from '../../../components/GameBoard';
-import { WordList } from '../../../components/WordList';
+import { FoundWordsList } from '../../../components/FoundWordsList';
 import { PlayerList } from '../../../components/PlayerList';
 
 // Типы
@@ -25,7 +25,6 @@ interface GameState {
   id: string;
   status: 'waiting' | 'in_progress' | 'finished';
   grid: Grid;
-  wordList: string[];
   players: Player[];
   foundWords: string[];
   foundCellsMap?: Record<string, string>;
@@ -47,6 +46,7 @@ interface GameState {
   }>;
   rematchSessionId?: string | null;
   onTimeLimit?: boolean;
+  totalWordCount: number;
 }
 
 export default function GamePage({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -695,11 +695,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               status={gameState.status}
             />
 
-            {/* Word list (shown for testing) */}
+            {/* FoundWordsList - показывает только найденные слова */}
             {isGameStarted && (
-              <WordList
-                words={gameState.wordList}
-                foundWords={new Set(gameState.foundWords)}
+              <FoundWordsList
+                foundWords={gameState.foundWords}
+                totalCount={gameState.totalWordCount}
               />
             )}
           </div>

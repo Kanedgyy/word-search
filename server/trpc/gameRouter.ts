@@ -625,7 +625,6 @@ const getSessionState = protectedProcedure
       id: session.id,
       status: session.status,
       grid: session.grid,
-      wordList: session.wordList,
       players,
       foundWords: foundWordsData.map(w => w.word),
       foundCellsMap: Object.fromEntries(foundCellsMap),
@@ -638,6 +637,7 @@ const getSessionState = protectedProcedure
       player: currentPlayer,
       teams: calculateTeams(players),
       rematchSessionId: session.rematchSessionId,
+      totalWordCount: session.wordList.length,
     };
   });
 
