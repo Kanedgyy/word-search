@@ -310,7 +310,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
       console.log('[handleStartGame] run-bots ответ:', data);
       
       if (data.success) {
-        setMessage(`Игра началась! Ботов запущено: ${data.botsCount || 0}`);
+        if (data.botsCount > 0) {
+          setMessage(`Игра началась! Ботов запущено: ${data.botsCount}`);
+        } else {
+          setMessage('Игра началась!');
+        }
       } else {
         setMessage('Игра началась, но боты не запущены: ' + (data.error || 'ошибка'));
       }
