@@ -203,37 +203,40 @@ export async function POST(request: NextRequest) {
       } catch (err: any) {
         console.log(`[run-bots] Ожидание завершено: ${err?.message || err}`);
       }
-    }
-    
-    // ЗАВЕРШАЕМ ИГРУ И СОХРАНЯЕМ СТАТИСТИКУ
-    console.log(`[run-bots] Завершаю игру и сохраняю статистику...`);
-    
-    // Проверяем текущий статус
-    const finalSession = await db.query.gameSessions.findFirst({
-      where: eq(gameSessions.id, sessionId)
-    });
-    
-    if (finalSession && finalSession.status !== 'finished') {
-      await db.update(gameSessions)
-        .set({ status: 'finished' })
-        .where(eq(gameSessions.id, sessionId));
-      console.log(`[run-bots] Игра завершена принудительно`);
-    }
-    
-    // Проверяем статистику
-    const existingEntries = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
-    
-    if (existingEntries.length === 0) {
-      console.log(`[run-bots] Статистика не найдена, сохраняю...`);
-      const saved = await saveMatchHistory(sessionId);
-      console.log(`[run-bots] Статистика ${saved ? 'успешно' : 'НЕ'} сохранена`);
+      
+      // ТОЛЬКО ЕСЛИ ЕСТЬ БОТЫ - завершаем игру и сохраняем статистику
+      console.log(`[run-bots] Завершаю игру и сохраняю статистику...`);
+      
+      // Проверяем текущий статус
+      const finalSession = await db.query.gameSessions.findFirst({
+        where: eq(gameSessions.id, sessionId)
+      });
+      
+      if (finalSession && finalSession.status !== 'finished') {
+        await db.update(gameSessions)
+          .set({ status: 'finished' })
+          .where(eq(gameSessions.id, sessionId));
+        console.log(`[run-bots] Игра завершена принудительно`);
+      }
+      
+      // Проверяем статистику
+      const existingEntries = await db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+      
+      if (existingEntries.length === 0) {
+        console.log(`[run-bots] Статистика не найдена, сохраняю...`);
+        const saved = await saveMatchHistory(sessionId);
+        console.log(`[run-bots] Статистика ${saved ? 'успешно' : 'НЕ'} сохранена`);
+      } else {
+        console.log(`[run-bots] Статистика уже сохранена (${existingEntries.length} записей)`);
+      }
     } else {
-      console.log(`[run-bots] Статистика уже сохранена (${existingEntries.length} записей)`);
+      console.log(`[run-bots] БОТОВ НЕТ - одиночная игра, не завершаем игру автоматически`);
+      // В одиночной игре игра завершится когда игрок найдёт все слова через submitWord
     }
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Игра завершена, статистика сохранена', 
+      message: bots.length > 0 ? 'Игра завершена, статистика сохранена' : 'Ботов нет, игра продолжается', 
       botsCount: bots.length 
     });
     

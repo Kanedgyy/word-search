@@ -305,6 +305,9 @@ const submitWord = publicProcedure
     
     const wordsFoundCount = allFoundWords.length;
     const totalWordsInGame = session.wordList.length;
+    
+    // Игра заканчивается только если все слова найдены
+    // Для одиночной игры это делает игрок, для multiplayer - боты или игроки
     const gameEnded = wordsFoundCount >= totalWordsInGame;
     
     console.log(`[submitWord] Слово найдено! Всего слов в игре: ${totalWordsInGame}, найдено: ${wordsFoundCount}, gameEnded: ${gameEnded}`);
