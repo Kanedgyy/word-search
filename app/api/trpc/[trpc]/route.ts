@@ -7,15 +7,14 @@
 
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '../../../../server/trpc';
-import { createInnerTRPCContext } from '../../../../server/trpc/trpc';
-import { db } from '../../../../lib/db';
+import { createContext } from '../../../../server/trpc/trpc';
 
 const handler = (req: Request) =>
   fetchRequestHandler({
     endpoint: '/api/trpc',
     req,
     router: appRouter,
-    createContext: () => createInnerTRPCContext({ db }),
+    createContext,
   });
 
 export { handler as GET, handler as POST };
