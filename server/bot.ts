@@ -325,15 +325,30 @@ export class GameBot {
   private async submitWord(wordData: WordPosition) {
     console.log(`[Бот ${this.playerId}] Сохраняю слово: ${wordData.word}`);
     
+    // Вычисляем направление
+    const start = wordData.path[0];
+    const end = wordData.path[wordData.path.length - 1];
+    const dr = end.row - start.row;
+    const dc = end.col - start.col;
+    
+    let direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up' = 'horizontal';
+    if (dr === 0 && dc !== 0) {
+      direction = 'horizontal';
+    } else if (dc === 0 && dr !== 0) {
+      direction = dr > 0 ? 'vertical' : 'vertical';
+    } else if (Math.abs(dr) === Math.abs(dc) && dr !== 0) {
+      direction = dr > 0 ? 'diagonal_down' : 'diagonal_up';
+    }
+    
     await db.insert(foundWords).values({
       sessionId: this.sessionId,
       playerId: this.playerId,
       word: wordData.word,
-      startRow: wordData.path[0].row,
-      startCol: wordData.path[0].col,
-      endRow: wordData.path[wordData.path.length - 1].row,
-      endCol: wordData.path[wordData.path.length - 1].col,
-      direction: 'horizontal',
+      startRow: start.row,
+      startCol: start.col,
+      endRow: end.row,
+      endCol: end.col,
+      direction,
       path: wordData.path,
     });
 

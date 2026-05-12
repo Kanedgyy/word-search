@@ -434,25 +434,18 @@ export function validateWordWithCoordinates(
     return { isValid: false, error: 'Координаты вне поля' };
   }
   
-  // 3. Извлекаем слово по прямым координатам (только прямые линии)
-  const extractedWord = extractWordFromGrid(grid, startRow, startCol, endRow, endCol);
+  // 3. Генерируем путь между start и end
+  const path = generatePath(startRow, startCol, endRow, endCol);
   
-  // Если слово не извлекается прямой линией - пробуем просто собрать по буквам
-  // Это для совместимости с "змейкой"
-  const wordLength = Math.max(
-    Math.abs(endRow - startRow) + 1,
-    Math.abs(endCol - startCol) + 1
-  );
-  
-  // Простая проверка: слово должно начинаться с первой буквы и заканчиваться последней
-  const firstLetter = grid[startRow][startCol].toUpperCase();
-  const lastLetter = grid[endRow][endCol].toUpperCase();
-  
-  if (upperWord[0] !== firstLetter || upperWord[upperWord.length - 1] !== lastLetter) {
-    return { isValid: false, error: 'Буквы на поле не совпадают со словом' };
+  // 4. Проверяем что все буквы на правильных местах
+  for (let i = 0; i < path.length; i++) {
+    const cell = grid[path[i].row][path[i].col].toUpperCase();
+    if (cell !== upperWord[i]) {
+      return { isValid: false, error: 'Буквы на поле не совпадают со словом' };
+    }
   }
   
-  // 4. Проверка что слово есть в словаре
+  // 5. Проверка что слово есть в словаре
   if (!validWords.includes(upperWord)) {
     return { isValid: false, error: 'Такого слова нет в списке' };
   }
