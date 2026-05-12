@@ -1,9 +1,8 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from './schema';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+// Для serverless (Vercel) используем postgres-js вместо pg
+const queryClient = postgres(process.env.DATABASE_URL!, { prepare: false });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(queryClient, { schema });
