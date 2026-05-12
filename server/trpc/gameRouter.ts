@@ -9,7 +9,7 @@
  */
 
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure, protectedProcedure } from './trpc';
+import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, getDirection } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
@@ -73,7 +73,7 @@ const BOT_COLORS = [
 /**
  * Создаёт новую игровую сессию
  */
-const createSession = protectedProcedure
+const createSession = publicProcedure
   .input(z.object({
     maxPlayers: z.number().min(2).max(6).default(6),
     duration: z.number().min(60).max(600).default(300),
@@ -108,7 +108,7 @@ const createSession = protectedProcedure
 /**
  * Присоединение к сессии
  */
-const joinSession = protectedProcedure
+const joinSession = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     playerName: z.string().min(1).max(20),
@@ -149,7 +149,6 @@ const joinSession = protectedProcedure
     
     const [player] = await ctx.db.insert(gamePlayers).values({
       sessionId: input.sessionId,
-      userId: ctx.user.id,
       name: input.playerName,
       isBot: false,
       color,
@@ -168,7 +167,7 @@ const joinSession = protectedProcedure
 /**
  * Запускает игру
  */
-const startGame = protectedProcedure
+const startGame = publicProcedure
   .input(z.object({
     sessionId: z.string(),
   }))
@@ -209,7 +208,7 @@ const startGame = protectedProcedure
 /**
  * Проверяет найденное слово
  */
-const submitWord = protectedProcedure
+const submitWord = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     playerId: z.string(),
@@ -525,7 +524,7 @@ async function calculateResults(ctx: any, sessionId: string) {
 /**
  * Получает состояние сессии
  */
-const getSessionState = protectedProcedure
+const getSessionState = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     playerId: z.string().optional(),
@@ -703,7 +702,7 @@ function getTeamName(teamId: string): string {
 /**
  * Устанавливает команду игрока
  */
-const setTeam = protectedProcedure
+const setTeam = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     playerId: z.string(),
@@ -735,7 +734,7 @@ const setTeam = protectedProcedure
 /**
  * Добавляет бота в сессию (для демонстрации)
  */
-const addBot = protectedProcedure
+const addBot = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     botName: z.string().min(1).max(20),
@@ -788,7 +787,7 @@ const addBot = protectedProcedure
   /**
    * Создаёт реванш — новую сессию с теми же игроками
    */
-  const rematch = protectedProcedure
+  const rematch = publicProcedure
     .input(z.object({
       sessionId: z.string(),
       playerId: z.string(), // ID игрока, запросившего реванш
@@ -835,7 +834,7 @@ const addBot = protectedProcedure
   /**
    * Удаляет игрока из сессии (только хост)
    */
-  const removePlayer = protectedProcedure
+  const removePlayer = publicProcedure
     .input(z.object({
       sessionId: z.string(),
       playerId: z.string(),
@@ -895,7 +894,7 @@ const addBot = protectedProcedure
   /**
    * Получает историю матчей игрока
    */
-  const getMatchHistory = protectedProcedure
+  const getMatchHistory = publicProcedure
     .input(z.object({
       playerName: z.string().min(1),
       limit: z.number().min(1).max(50).default(20),
