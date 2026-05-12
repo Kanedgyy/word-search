@@ -11,9 +11,9 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from './trpc';
 import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, getDirection } from '../../lib/word-search';
+import { GameBot } from '../../server/bot';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
-import { GameBot } from '../../server/bot';
 
 // Типы для игроков и сессий
 interface Player {
@@ -195,8 +195,31 @@ const startGame = publicProcedure
       })
       .where(eq(gameSessions.id, input.sessionId));
     
-    // Боты запускаются через отдельный Edge API route /api/run-bots
-    // чтобы работать в serverless-окружении Vercel
+    // Запускаем ботов в фоне (не ждём их завершения)
+    const bots = players.filter(p => p.isBot);
+    if (bots.length > 0) {
+      console.log(`[startGame] Запускаю ${bots.length} ботов в фоне...`);
+      // Запускаем ботов асинхронно, не ждём
+      setTimeout(async () => {
+        for (const bot of bots) {
+          const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
+          try {
+            const gameBot = new GameBot({
+              sessionId: input.sessionId,
+              playerId: bot.id,
+              minDelay: difficulty === 'easy' ? 3200 : difficulty === 'medium' ? 2000 : 1200,
+              maxDelay: difficulty === 'easy' ? 8000 : difficulty === 'medium' ? 6000 : 4000,
+              accuracy: difficulty === 'easy' ? 0.35 : difficulty === 'medium' ? 0.45 : 0.60,
+              knownWordsRatio: 1.0,
+              skipChance: difficulty === 'easy' ? 0.25 : difficulty === 'medium' ? 0.20 : 0.10,
+            });
+            await gameBot.startFindingWords();
+          } catch (err: any) {
+            console.error(`[startGame] Ошибка бота ${bot.id}:`, err?.message || err);
+          }
+        }
+      }, 1000);
+    }
 
     return {
       message: 'Игра началась!',
