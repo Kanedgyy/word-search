@@ -323,3 +323,107 @@ export function directionToText(direction: Direction): string {
   };
   return map[direction];
 }
+
+/**
+ * Извлекает слово из поля по координатам
+ */
+export function extractWordFromGrid(
+  grid: Grid,
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number
+): string {
+  const rowStep = Math.sign(endRow - startRow);
+  const colStep = Math.sign(endCol - startCol);
+  
+  let word = '';
+  let r = startRow;
+  let c = startCol;
+  
+  while (true) {
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) {
+      return ''; // Вне границ
+    }
+    word += grid[r][c];
+    
+    if (r === endRow && c === endCol) break;
+    
+    r += rowStep;
+    c += colStep;
+    
+    // Защита от бесконечного цикла
+    if (word.length > GRID_SIZE * GRID_SIZE) break;
+  }
+  
+  return word;
+}
+
+/**
+ * Определяет направление по координатам
+ */
+export function getDirection(
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number
+): Direction | null {
+  const dr = endRow - startRow;
+  const dc = endCol - startCol;
+  
+  if (dr === 0 && dc !== 0) return 'horizontal';
+  if (dc === 0 && dr !== 0) return 'vertical';
+  if (Math.abs(dr) === Math.abs(dc) && dr !== 0) {
+    return dr > 0 ? 'diagonal_down' : 'diagonal_up';
+  }
+  return null;
+}
+
+/**
+ * Усиленная валидация слова с проверкой всех параметров
+ */
+export function validateWordWithCoordinates(
+  word: string,
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number,
+  direction: Direction,
+  validWords: string[],
+  grid: Grid
+): { isValid: boolean; error?: string } {
+  const upperWord = word.toUpperCase().replace(/[^А-ЯЁ]/g, '');
+  
+  // 1. Проверка длины
+  if (upperWord.length < 3) {
+    return { isValid: false, error: 'Слово слишком короткое (минимум 3 буквы)' };
+  }
+  
+  // 2. Проверка границ
+  if (startRow < 0 || startRow >= GRID_SIZE || startCol < 0 || startCol >= GRID_SIZE ||
+      endRow < 0 || endRow >= GRID_SIZE || endCol < 0 || endCol >= GRID_SIZE) {
+    return { isValid: false, error: 'Координаты вне поля' };
+  }
+  
+  // 3. Проверка направления
+  const calculatedDirection = getDirection(startRow, startCol, endRow, endCol);
+  if (calculatedDirection !== direction) {
+    return { 
+      isValid: false, 
+      error: `Неверное направление. Вы выбрали ${directionToText(direction)}, но выделено ${directionToText(calculatedDirection) || 'неправильно'}` 
+    };
+  }
+  
+  // 4. Проверка что слово на этих координатах
+  const extractedWord = extractWordFromGrid(grid, startRow, startCol, endRow, endCol);
+  if (extractedWord !== upperWord) {
+    return { isValid: false, error: 'Буквы на поле не совпадают со словом' };
+  }
+  
+  // 5. Проверка что слово есть в словаре
+  if (!validWords.includes(upperWord)) {
+    return { isValid: false, error: 'Такого слова нет в списке' };
+  }
+  
+  return { isValid: true };
+}

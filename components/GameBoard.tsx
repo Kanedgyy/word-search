@@ -21,7 +21,7 @@ interface GameBoardProps {
   grid: Grid;
   foundWords: Set<string>;
   playerColor?: string;
-  onWordSelect?: (word: string, path: Coordinate[]) => void;
+  onWordSelect?: (word: string, startRow: number, startCol: number, endRow: number, endCol: number, direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up') => void;
   foundCellsMap?: Record<string, string>;
 }
 
@@ -92,7 +92,25 @@ export function GameBoard({
     setIsMouseDown(false);
     if (selectedPath.length >= 3 && onWordSelect) {
       const word = selectedPath.map(p => grid[p.row][p.col]).join('');
-      onWordSelect(word, selectedPath);
+      const start = selectedPath[0];
+      const end = selectedPath[selectedPath.length - 1];
+      
+      // Вычисляем направление
+      const dr = end.row - start.row;
+      const dc = end.col - start.col;
+      let direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up';
+      
+      if (dr === 0) {
+        direction = 'horizontal';
+      } else if (dc === 0) {
+        direction = 'vertical';
+      } else if (dr > 0) {
+        direction = 'diagonal_down';
+      } else {
+        direction = 'diagonal_up';
+      }
+      
+      onWordSelect(word, start.row, start.col, end.row, end.col, direction);
     }
     setSelectedPath([]);
   };

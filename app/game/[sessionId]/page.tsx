@@ -258,15 +258,26 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   }, [gameState?.foundWords]);
 
   // Отправка найденного слова
-  const handleWordSelect = async (word: string, path: Array<{ row: number; col: number }>) => {
-    if (!playerId || path.length < 3) return;
+  const handleWordSelect = async (
+    word: string, 
+    startRow: number, 
+    startCol: number, 
+    endRow: number, 
+    endCol: number,
+    direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up'
+  ) => {
+    if (!playerId) return;
 
     try {
       const result = await submitWordMutation.mutateAsync({
         sessionId,
         playerId,
         word,
-        path,
+        startRow,
+        startCol,
+        endRow,
+        endCol,
+        direction,
       });
       
       if (result.success) {

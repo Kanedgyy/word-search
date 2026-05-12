@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from './trpc';
-import { generateWordSearch, getRandomWordSubset, validateWordByPath } from '../../lib/word-search';
+import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, getDirection } from '../../lib/word-search';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
 import { GameBot } from '../../server/bot';
@@ -214,11 +214,17 @@ const submitWord = protectedProcedure
     sessionId: z.string(),
     playerId: z.string(),
     word: z.string(),
-    path: z.array(z.object({ row: z.number(), col: z.number() })),
+    startRow: z.number().int().min(0).max(9),
+    startCol: z.number().int().min(0).max(9),
+    endRow: z.number().int().min(0).max(9),
+    endCol: z.number().int().min(0).max(9),
+    direction: z.enum(['horizontal', 'vertical', 'diagonal_down', 'diagonal_up']),
   }))
   .mutation(async ({ ctx, input }) => {
+    const { sessionId, playerId, word, startRow, startCol, endRow, endCol, direction } = input;
+    
     const session = await ctx.db.query.gameSessions.findFirst({
-      where: eq(gameSessions.id, input.sessionId),
+      where: eq(gameSessions.id, sessionId),
     });
     
     if (!session) {
@@ -230,18 +236,19 @@ const submitWord = protectedProcedure
     }
     
     const player = await ctx.db.query.gamePlayers.findFirst({
-      where: eq(gamePlayers.id, input.playerId),
+      where: eq(gamePlayers.id, playerId),
     });
     
     if (!player) {
       throw new Error('Игрок не найден');
     }
     
-    const upperWord = input.word.toUpperCase();
+    const upperWord = word.toUpperCase();
     
+    // 1. Проверка что слово еще не найдено
     const existingWord = await ctx.db.query.foundWords.findFirst({
       where: and(
-        eq(foundWords.sessionId, input.sessionId),
+        eq(foundWords.sessionId, sessionId),
         eq(foundWords.word, upperWord)
       ),
     });
@@ -253,12 +260,16 @@ const submitWord = protectedProcedure
       };
     }
     
-    // Проверка: слово валидно по пути
-    const validation = validateWordByPath(
-      input.word,
+    // 2. Усиленная валидация с проверкой координат и направления
+    const validation = validateWordWithCoordinates(
+      word,
+      startRow,
+      startCol,
+      endRow,
+      endCol,
+      direction,
       session.wordList,
-      session.grid,
-      input.path
+      session.grid as string[][]
     );
     
     if (!validation.isValid) {
@@ -268,20 +279,20 @@ const submitWord = protectedProcedure
       };
     }
     
-    // Добавляем слово в найденные
+    // 3. Добавляем слово в найденные
     await ctx.db.insert(foundWords).values({
-      sessionId: input.sessionId,
-      playerId: input.playerId,
+      sessionId,
+      playerId,
       word: upperWord,
-      startRow: input.path[0]?.row ?? 0,
-      startCol: input.path[0]?.col ?? 0,
-      endRow: input.path[input.path.length - 1]?.row ?? 0,
-      endCol: input.path[input.path.length - 1]?.col ?? 0,
-      direction: 'horizontal',
-      path: input.path,
+      startRow,
+      startCol,
+      endRow,
+      endCol,
+      direction,
+      path: [{ row: startRow, col: startCol }, { row: endRow, col: endCol }],
     });
     
-    // Обновляем firstWordTime, если это первое слово игрока
+    // 4. Обновляем firstWordTime, если это первое слово игрока
     if (!player.firstWordTime) {
       const sessionStartTime = session.createdAt ? new Date(session.createdAt).getTime() : Date.now();
       const currentTime = Date.now();
@@ -289,26 +300,23 @@ const submitWord = protectedProcedure
       
       await ctx.db.update(gamePlayers)
         .set({ firstWordTime: elapsedSeconds })
-        .where(eq(gamePlayers.id, input.playerId));
+        .where(eq(gamePlayers.id, playerId));
     }
     
-    // Получаем актуальное количество найденных слов игроком
+    // 5. Получаем актуальное количество найденных слов игроком
     const playerWords = await ctx.db.select({ id: foundWords.id })
       .from(foundWords)
-      .where(eq(foundWords.playerId, input.playerId));
+      .where(eq(foundWords.playerId, playerId));
     
     const playerScore = playerWords.length;
     
-    // Проверяем, закончилась ли игра (все слова найдены)
+    // 6. Проверяем, закончилась ли игра (все слова найдены)
     const allFoundWords = await ctx.db.select().from(foundWords).where(
-      eq(foundWords.sessionId, input.sessionId)
+      eq(foundWords.sessionId, sessionId)
     );
     
     const wordsFoundCount = allFoundWords.length;
     const totalWordsInGame = session.wordList.length;
-    
-    // Игра заканчивается только если все слова найдены
-    // Для одиночной игры это делает игрок, для multiplayer - боты или игроки
     const gameEnded = wordsFoundCount >= totalWordsInGame;
     
     console.log(`[submitWord] Слово найдено! Всего слов в игре: ${totalWordsInGame}, найдено: ${wordsFoundCount}, gameEnded: ${gameEnded}`);
@@ -317,19 +325,19 @@ const submitWord = protectedProcedure
       console.log(`[submitWord] === ВСЕ СЛОВА НАЙДЕНЫ! Завершаем игру ===`);
       await ctx.db.update(gameSessions)
         .set({ status: 'finished' })
-        .where(eq(gameSessions.id, input.sessionId));
+        .where(eq(gameSessions.id, sessionId));
       
       // Ждём немного чтобы все данные записались
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // Сохраняем статистику матча
       console.log(`[submitWord] Вызываю saveMatchHistory...`);
-      await saveMatchHistory(ctx, input.sessionId);
+      await saveMatchHistory(ctx, sessionId);
       console.log(`[submitWord] saveMatchHistory завершена`);
     }
     
-    // Вычисляем результаты
-    const results = await calculateResults(ctx, input.sessionId);
+    // 7. Вычисляем результаты
+    const results = await calculateResults(ctx, sessionId);
     
     return {
       success: true,
