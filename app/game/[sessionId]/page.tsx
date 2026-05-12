@@ -6,6 +6,7 @@ import { trpc } from '../../../lib/trpc-client';
 import { GameBoard } from '../../../components/GameBoard';
 import { FoundWordsList } from '../../../components/FoundWordsList';
 import { PlayerList } from '../../../components/PlayerList';
+import { WordList } from '../../../components/WordList';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { WSMessage } from '../../../server/websocket';
 
@@ -27,6 +28,7 @@ interface GameState {
   id: string;
   status: 'waiting' | 'in_progress' | 'finished';
   grid: Grid;
+  wordList: string[];
   players: Player[];
   foundWords: string[];
   foundCellsMap?: Record<string, string>;
@@ -241,9 +243,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     onSuccess: async (data) => {
       // Хост должен сам присоединиться к новой сессии
       try {
+        const userId = localStorage.getItem('userId') || undefined;
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: data.sessionId,
           playerName: localStorage.getItem('playerName') || 'Игрок',
+          userId
         });
         const name = localStorage.getItem('playerName') || 'Игрок';
         const color = localStorage.getItem('playerColor') || '#4ECDC4';
@@ -258,9 +262,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     if (!gameState?.rematchSessionId) return;
     console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
     try {
+      const userId = localStorage.getItem('userId') || undefined;
       const joinData = await joinSessionMutation.mutateAsync({
         sessionId: gameState.rematchSessionId,
         playerName: playerName || 'Игрок',
+        userId
       });
       router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
     } catch (err: any) {
@@ -724,11 +730,11 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               status={gameState.status}
             />
 
-            {/* FoundWordsList - показывает только найденные слова */}
-            {isGameStarted && (
-              <FoundWordsList
-                foundWords={gameState.foundWords}
-                totalCount={gameState.totalWordCount}
+            {/* WordList - показывает все слова для поиска */}
+            {isGameStarted && gameState.wordList && (
+              <WordList
+                words={gameState.wordList}
+                foundWords={new Set(gameState.foundWords)}
               />
             )}
           </div>

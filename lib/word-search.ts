@@ -380,6 +380,35 @@ export function getDirection(
 }
 
 /**
+ * Генерирует полный путь между двумя точками
+ */
+export function generatePath(
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number
+): Array<{ row: number; col: number }> {
+  const path: Array<{ row: number; col: number }> = [];
+  
+  const dr = endRow - startRow;
+  const dc = endCol - startCol;
+  
+  const steps = Math.max(Math.abs(dr), Math.abs(dc));
+  
+  const rowStep = steps === 0 ? 0 : dr / steps;
+  const colStep = steps === 0 ? 0 : dc / steps;
+  
+  for (let i = 0; i <= steps; i++) {
+    path.push({
+      row: startRow + Math.round(i * rowStep),
+      col: startCol + Math.round(i * colStep),
+    });
+  }
+  
+  return path;
+}
+
+/**
  * Усиленная валидация слова с проверкой всех параметров
  */
 export function validateWordWithCoordinates(

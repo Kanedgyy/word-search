@@ -53,9 +53,11 @@ export default function Home() {
       const newSessionId = createData.sessionId;
 
       if (newSessionId) {
+        const userId = localStorage.getItem('userId') || undefined;
         const joinData = await joinSessionMutation.mutateAsync({ 
           sessionId: newSessionId, 
-          playerName 
+          playerName,
+          userId
         });
         
         // Сохраняем данные игрока
@@ -83,9 +85,11 @@ export default function Home() {
     }
 
     try {
+      const userId = localStorage.getItem('userId') || undefined;
       const joinData = await joinSessionMutation.mutateAsync({ 
         sessionId, 
-        playerName 
+        playerName,
+        userId
       });
       
       const playerId = joinData.playerId;

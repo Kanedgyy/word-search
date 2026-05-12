@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from './trpc';
-import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, getDirection } from '../../lib/word-search';
+import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, getDirection, generatePath } from '../../lib/word-search';
 import { GameBot } from '../../server/bot';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
@@ -112,6 +112,7 @@ const joinSession = publicProcedure
   .input(z.object({
     sessionId: z.string(),
     playerName: z.string().min(1).max(20),
+    userId: z.string().optional(), // ID пользователя Better Auth (опционально)
   }))
   .mutation(async ({ ctx, input }) => {
     const session = await ctx.db.query.gameSessions.findFirst({
@@ -149,6 +150,7 @@ const joinSession = publicProcedure
     
     const [player] = await ctx.db.insert(gamePlayers).values({
       sessionId: input.sessionId,
+      userId: input.userId ?? null, // Сохраняем userId если передан
       name: input.playerName,
       isBot: false,
       color,
@@ -302,6 +304,7 @@ const submitWord = publicProcedure
     }
     
     // 3. Добавляем слово в найденные
+    const path = generatePath(startRow, startCol, endRow, endCol);
     await ctx.db.insert(foundWords).values({
       sessionId,
       playerId,
@@ -311,7 +314,7 @@ const submitWord = publicProcedure
       endRow,
       endCol,
       direction,
-      path: [{ row: startRow, col: startCol }, { row: endRow, col: endCol }],
+      path,
     });
     
     // 4. Обновляем firstWordTime, если это первое слово игрока
@@ -655,6 +658,7 @@ const getSessionState = publicProcedure
       id: session.id,
       status: session.status,
       grid: session.grid,
+      wordList: session.wordList,
       players,
       foundWords: foundWordsData.map(w => w.word),
       foundCellsMap: Object.fromEntries(foundCellsMap),
