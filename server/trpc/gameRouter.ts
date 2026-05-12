@@ -201,9 +201,9 @@ const startGame = publicProcedure
     const bots = players.filter(p => p.isBot);
     if (bots.length > 0) {
       console.log(`[startGame] Запускаю ${bots.length} ботов в фоне...`);
-      // Запускаем ботов асинхронно, не ждём
+      // Запускаем всех ботов параллельно, не ждём
       setTimeout(async () => {
-        for (const bot of bots) {
+        const botPromises = bots.map(async (bot) => {
           const difficulty = (bot.difficulty as 'easy' | 'medium' | 'hard') || 'medium';
           try {
             const gameBot = new GameBot({
@@ -219,7 +219,8 @@ const startGame = publicProcedure
           } catch (err: any) {
             console.error(`[startGame] Ошибка бота ${bot.id}:`, err?.message || err);
           }
-        }
+        });
+        await Promise.all(botPromises);
       }, 1000);
     }
 
