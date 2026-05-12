@@ -30,11 +30,14 @@ export interface WSMessage {
 // Хранилище подключений по сессиям
 const sessionConnections = new Map<string, Set<WebSocket>>();
 
+let serverInstance: WebSocketServer | null = null;
+
 /**
  * Инициализирует WebSocket сервер
  */
 export function initWebSocketServer(port: number = 3001): WebSocketServer {
   const wss = new WebSocketServer({ port });
+  serverInstance = wss;
 
   wss.on('connection', (ws: WebSocket) => {
     console.log('Новое WebSocket подключение');
@@ -91,6 +94,13 @@ export function initWebSocketServer(port: number = 3001): WebSocketServer {
 
   console.log(`WebSocket сервер запущен на порту ${port}`);
   return wss;
+}
+
+/**
+ * Возвращает существующий экземпляр WebSocket сервера
+ */
+export function getWebSocketServer(): WebSocketServer | null {
+  return serverInstance;
 }
 
 /**

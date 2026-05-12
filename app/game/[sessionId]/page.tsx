@@ -6,6 +6,8 @@ import { trpc } from '../../../lib/trpc-client';
 import { GameBoard } from '../../../components/GameBoard';
 import { FoundWordsList } from '../../../components/FoundWordsList';
 import { PlayerList } from '../../../components/PlayerList';
+import { useWebSocket } from '../../../hooks/useWebSocket';
+import { WSMessage } from '../../../server/websocket';
 
 // Типы
 type Grid = string[][];
@@ -77,12 +79,48 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   } = trpc.game.getSessionState.useQuery(
     { sessionId, playerId },
     { 
-      refetchInterval: 1000, // Polling каждую секунду для быстрой реакции на таймер
+      refetchInterval: 2000, // Polling раз в 2 секунды только для таймера
       enabled: !!sessionId,
       staleTime: 0,
       retry: false,
     }
   );
+
+  // WebSocket для real-time обновлений
+  const { isConnected: wsConnected } = useWebSocket({
+    sessionId,
+    playerId,
+    onMessage: (message: WSMessage) => {
+      console.log('[WS] Получено сообщение:', message.type, message.data);
+      
+      switch (message.type) {
+        case 'word_found':
+          // Слово найдено - обновляем состояние
+          void refetch();
+          const finder = message.data?.playerName || 'Игрок';
+          const word = message.data?.word || '';
+          setMessage(`✓ Найдено слово "${word}" игроком ${finder}!`);
+          setTimeout(() => setMessage(''), 2000);
+          break;
+          
+        case 'game_started':
+          setMessage('🚀 Игра началась!');
+          setTimeout(() => setMessage(''), 2000);
+          void refetch();
+          break;
+          
+        case 'game_ended':
+          setMessage('🏆 Игра завершена!');
+          setTimeout(() => setMessage(''), 2000);
+          void refetch();
+          break;
+          
+        case 'player_joined':
+          void refetch();
+          break;
+      }
+    },
+  });
 
   // Debug logging для gameState
   useEffect(() => {
@@ -236,6 +274,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   };
 
   // Проверка новых найденных слов для уведомления
+  // (теперь это делается через WebSocket, оставляем как fallback)
   useEffect(() => {
     if (!gameState) return;
     
@@ -245,13 +284,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
     );
     
     if (newWords.length > 0) {
-      const finder = gameState.players.find(p => 
-        newWords.some(word => word === word)
-      );
-      if (finder) {
-        setMessage(`✓ Найдено слово: ${newWords.join(', ')}`);
-        setTimeout(() => setMessage(''), 2000);
-      }
+      setMessage(`✓ Найдено слово: ${newWords.join(', ')}`);
+      setTimeout(() => setMessage(''), 2000);
     }
     
     lastFoundWordsRef.current = currentFoundWords;
@@ -452,6 +486,9 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 {playerName.charAt(0).toUpperCase()}
               </div>
               <span className="text-white text-sm font-medium">{playerName}</span>
+              {wsConnected && (
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="WebSocket подключён"></div>
+              )}
             </div>
           </div>
           

@@ -24,6 +24,13 @@ export function useWebSocket({ sessionId, playerId, onMessage }: UseWebSocketOpt
     // Определяем URL WebSocket (в dev используем тот же хост)
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
     
+    // Проверяем включён ли WebSocket
+    const WS_ENABLED = process.env.NEXT_PUBLIC_WS_ENABLED === 'true';
+    if (!WS_ENABLED) {
+      console.log('[WS] WebSocket выключен, используем polling');
+      return;
+    }
+    
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

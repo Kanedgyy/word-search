@@ -1,9 +1,9 @@
-import { router, publicProcedure } from "./trpc";
+import { createTRPCRouter, publicProcedure } from "./trpc";
 import { z } from "zod";
 import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 
-export const authRouter = router({
+export const authRouter = createTRPCRouter({
   getSession: publicProcedure.query(async () => {
     const session = await auth.api.getSession({ headers: await headers() });
     return session;

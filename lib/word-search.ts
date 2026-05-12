@@ -407,10 +407,10 @@ export function validateWordWithCoordinates(
   
   // 3. Проверка направления
   const calculatedDirection = getDirection(startRow, startCol, endRow, endCol);
-  if (calculatedDirection !== direction) {
+  if (!calculatedDirection || calculatedDirection !== direction) {
     return { 
       isValid: false, 
-      error: `Неверное направление. Вы выбрали ${directionToText(direction)}, но выделено ${directionToText(calculatedDirection) || 'неправильно'}` 
+      error: `Неверное направление. Вы выбрали ${directionToText(direction)}, но выделено ${calculatedDirection ? directionToText(calculatedDirection) : 'неправильно'}` 
     };
   }
   
