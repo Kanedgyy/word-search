@@ -1,40 +1,103 @@
-import { pgTable, uuid, text, timestamp, integer, boolean, varchar, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, boolean, varchar, jsonb, primaryKey } from 'drizzle-orm/pg-core';
 
-// Таблица пользователей
+// ============================================================================
+// Better Auth Schema
+// ============================================================================
+
+/**
+ * Пользователи системы (расширенная таблица для Better-auth)
+ */
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
   passwordHash: text('password_hash').default(''),
+  image: text('image'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * Сессии пользователей (для Better-auth)
+ */
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * Аккаунты OAuth (для Better-auth)
+ */
+export const accounts = pgTable('accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  idToken: text('id_token'),
+  password: text('password'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * Верификации (для Better-auth)
+ */
+export const verifications = pgTable('verifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * Роли пользователей (для ролевой модели)
+ */
+export const userRoles = pgTable('user_roles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: varchar('role', { enum: ['user', 'admin'] }).notNull().default('user'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Таблица сессий игр
+// ============================================================================
+// Game Schema
+// ============================================================================
+
+/**
+ * Сессии игр
+ */
 export const gameSessions = pgTable('game_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  // Список слов для поиска
   wordList: text('word_list').array().notNull(),
-  // Состояние поля (10x10 букв) — храним как JSON
   grid: jsonb('grid').$type<string[][]>().notNull(),
-  // Режим игры: individual (каждый сам за себя) или team (командный)
   gameMode: varchar('game_mode', { enum: ['individual', 'team'] }).notNull().default('individual'),
-  // Игра на времени (да/нет)
   onTimeLimit: boolean('on_time_limit').default(false),
-  // Статус игры: 'waiting' | 'in_progress' | 'finished'
   status: varchar('status', { enum: ['waiting', 'in_progress', 'finished'] }).notNull().default('waiting'),
-  // Максимальное количество игроков
   maxPlayers: integer('max_players').notNull().default(6),
-  // Длительность игры в секундах
-  duration: integer('duration').notNull().default(300), // 5 минут по умолчанию
-  // Время создания
+  duration: integer('duration').notNull().default(300),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  // Время окончания
   endsAt: timestamp('ends_at'),
-  // Ссылка на реванш (новая сессия)
   rematchSessionId: uuid('rematch_session_id'),
+  hostUserId: uuid('host_user_id').references(() => users.id, { onDelete: 'set null' }),
 });
 
-// Таблица игроков в сессиях
+/**
+ * Игроки в сессиях
+ */
 export const gamePlayers = pgTable('game_players', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').notNull().references(() => gameSessions.id, { onDelete: 'cascade' }),
@@ -45,59 +108,44 @@ export const gamePlayers = pgTable('game_players', {
   turnOrder: integer('turn_order').notNull(),
   status: varchar('status', { enum: ['joined', 'left'] }).notNull().default('joined'),
   firstWordTime: integer('first_word_time'),
-  // Команда игрока (null = индивидуальный режим)
   team: varchar('team', { enum: ['red', 'blue', 'green', 'yellow'] }),
-  // Сложность бота
   difficulty: varchar('difficulty', { enum: ['easy', 'medium', 'hard'] }),
-  // Количество найденных слов (кэш для быстрого отображения)
   wordsFound: integer('words_found').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Таблица найденных слов
+/**
+ * Найденные слова
+ */
 export const foundWords = pgTable('found_words', {
   id: uuid('id').primaryKey().defaultRandom(),
-  // Ссылка на сессию
   sessionId: uuid('session_id').notNull().references(() => gameSessions.id, { onDelete: 'cascade' }),
-  // Ссылка на игрока
   playerId: uuid('player_id').notNull().references(() => gamePlayers.id, { onDelete: 'cascade' }),
-  // Найденное слово
   word: text('word').notNull(),
-  // Координаты начала слова [row, col]
   startRow: integer('start_row').notNull(),
   startCol: integer('start_col').notNull(),
-  // Координаты конца слова [row, col]
   endRow: integer('end_row').notNull(),
   endCol: integer('end_col').notNull(),
-  // Направление: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up'
   direction: varchar('direction', { 
     enum: ['horizontal', 'vertical', 'diagonal_down', 'diagonal_up'] 
   }).notNull(),
-  // Путь слова (для змейки) — массив координат [{row, col}, ...]
   path: jsonb('path').$type<Array<{ row: number; col: number }>>(),
-  // Время нахождения
   foundAt: timestamp('found_at').defaultNow().notNull(),
 });
 
-// Таблица статистики матчей (история)
+/**
+ * История матчей
+ */
 export const matchHistory = pgTable('match_history', {
   id: uuid('id').primaryKey().defaultRandom(),
-  // Ссылка на сессию
   sessionId: uuid('session_id').notNull().references(() => gameSessions.id, { onDelete: 'cascade' }),
-  // Ссылка на пользователя
   userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
-  // Имя игрока (сохраняем копию на случай удаления пользователя)
   playerName: text('player_name').notNull(),
-  // Количество найденных слов
   wordsFound: integer('words_found').notNull().default(0),
-  // Время первого слова (для определения скорости)
-  firstWordTime: integer('first_word_time'), // в секундах от начала игры
-  // Место в соревновании
+  firstWordTime: integer('first_word_time'),
   rank: integer('rank'),
-  // Время записи
   recordedAt: timestamp('recorded_at').defaultNow().notNull(),
 }, (table) => {
-  // Уникальный индекс чтобы одна сессия была записана только один раз
   return {
     uniqueSessionIdx: {
       unique: true,
@@ -106,11 +154,23 @@ export const matchHistory = pgTable('match_history', {
   };
 });
 
-// Экспорт всех таблиц для Drizzle
+// Экспорт всех таблиц
 export const tables = {
   users,
+  sessions,
+  accounts,
+  verifications,
+  userRoles,
   gameSessions,
   gamePlayers,
   foundWords,
   matchHistory,
+};
+
+// Экспорт для Better-auth
+export const betterAuthSchema = {
+  users,
+  sessions,
+  accounts,
+  verifications,
 };
