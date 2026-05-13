@@ -1,13 +1,13 @@
 /**
- * Jest setup файл
+ * Vitest setup файл
  */
 
-import { beforeAll, afterAll } from '@jest/globals';
+import { vi, beforeAll, afterAll } from 'vitest';
 
 // Глобальные настройки для тестов
 beforeAll(() => {
   // Увеличиваем таймаут для всех тестов
-  jest.setTimeout(10000);
+  vi.setConfig({ testTimeout: 10000 });
 });
 
 afterAll(() => {
@@ -15,5 +15,5 @@ afterAll(() => {
 });
 
 // Мок для console.error чтобы не засорять вывод тестов
-global.console.error = jest.fn();
-global.console.warn = jest.fn();
+global.console.error = vi.fn();
+global.console.warn = vi.fn();

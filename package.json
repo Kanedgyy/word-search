@@ -16,6 +16,8 @@
     "test:integration": "jest tests/integration",
     "test:e2e": "playwright test",
     "test:coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
+    "test:vitest": "vitest run",
+    "test:vitest:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -51,6 +53,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
+    "@vitest/ui": "^3.2.4",
     "coveralls": "^3.1.1",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9",
@@ -59,6 +62,7 @@
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }
