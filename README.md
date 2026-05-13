@@ -511,6 +511,13 @@ npm run test:vitest:watch    # Watch mode
 
 Создано в рамках учебного проекта.
 
+## 📄 Документация
+
+- **[API Documentation](API.md)** — tRPC endpoints, WebSocket events, error codes
+- **[Architecture](ARCHITECTURE.md)** — Clean Architecture, dependency injection, flows
+- **[Deployment](DEPLOYMENT.md)** — Vercel, PostgreSQL, OAuth setup
+- **[Testing Guide](tests/README.md)** — Unit, integration, E2E тесты
+
 ## 📄 Лицензия
 
 MIT
