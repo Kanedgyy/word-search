@@ -300,24 +300,25 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   // Отправка найденного слова
   const handleWordSelect = async (
     word: string, 
-    startRow: number, 
-    startCol: number, 
-    endRow: number, 
-    endCol: number,
+    path: Array<{ row: number; col: number }>,
     direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up'
   ) => {
     if (!playerId) return;
+
+    const start = path[0];
+    const end = path[path.length - 1];
 
     try {
       const result = await submitWordMutation.mutateAsync({
         sessionId,
         playerId,
         word,
-        startRow,
-        startCol,
-        endRow,
-        endCol,
+        startRow: start.row,
+        startCol: start.col,
+        endRow: end.row,
+        endCol: end.col,
         direction,
+        path, // Передаём полный путь!
       });
       
       if (result.success) {

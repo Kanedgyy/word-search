@@ -21,7 +21,7 @@ interface GameBoardProps {
   grid: Grid;
   foundWords: Set<string>;
   playerColor?: string;
-  onWordSelect?: (word: string, startRow: number, startCol: number, endRow: number, endCol: number, direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up') => void;
+  onWordSelect?: (word: string, path: Array<{ row: number; col: number }>, direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up') => void;
   foundCellsMap?: Record<string, string>;
 }
 
@@ -95,22 +95,20 @@ export function GameBoard({
       const start = selectedPath[0];
       const end = selectedPath[selectedPath.length - 1];
       
-      // Вычисляем направление
+      // Вычисляем направление по start и end
       const dr = end.row - start.row;
       const dc = end.col - start.col;
-      let direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up';
+      let direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up' = 'horizontal';
       
-      if (dr === 0) {
+      if (dr === 0 && dc !== 0) {
         direction = 'horizontal';
-      } else if (dc === 0) {
+      } else if (dc === 0 && dr !== 0) {
         direction = 'vertical';
-      } else if (dr > 0) {
-        direction = 'diagonal_down';
-      } else {
-        direction = 'diagonal_up';
+      } else if (Math.abs(dr) === Math.abs(dc) && dr !== 0) {
+        direction = dr > 0 ? 'diagonal_down' : 'diagonal_up';
       }
       
-      onWordSelect(word, start.row, start.col, end.row, end.col, direction);
+      onWordSelect(word, selectedPath, direction);
     }
     setSelectedPath([]);
   };

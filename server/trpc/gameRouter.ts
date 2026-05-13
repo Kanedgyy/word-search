@@ -244,9 +244,10 @@ const submitWord = publicProcedure
     endRow: z.number().int().min(0).max(9),
     endCol: z.number().int().min(0).max(9),
     direction: z.enum(['horizontal', 'vertical', 'diagonal_down', 'diagonal_up']),
+    path: z.array(z.object({ row: z.number(), col: z.number() })).optional(), // Полный путь от клиента
   }))
   .mutation(async ({ ctx, input }) => {
-    const { sessionId, playerId, word, startRow, startCol, endRow, endCol, direction } = input;
+    const { sessionId, playerId, word, startRow, startCol, endRow, endCol, direction, path } = input;
     
     const session = await ctx.db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, sessionId),
@@ -285,27 +286,17 @@ const submitWord = publicProcedure
       };
     }
     
-    // 2. Усиленная валидация с проверкой координат и направления
-    const validation = validateWordWithCoordinates(
-      word,
-      startRow,
-      startCol,
-      endRow,
-      endCol,
-      direction,
-      session.wordList,
-      session.grid as string[][]
-    );
-    
-    if (!validation.isValid) {
+    // 2. Упрощённая валидация - проверяем только что слово есть в словаре
+    // (клиент уже проверил что буквы совпадают при выделении)
+    if (!session.wordList.includes(upperWord)) {
       return {
         success: false,
-        error: validation.error,
+        error: 'Такого слова нет в списке',
       };
     }
     
     // 3. Добавляем слово в найденные
-    const path = generatePath(startRow, startCol, endRow, endCol);
+    const savedPath = path ?? generatePath(startRow, startCol, endRow, endCol);
     await ctx.db.insert(foundWords).values({
       sessionId,
       playerId,
@@ -315,7 +306,7 @@ const submitWord = publicProcedure
       endRow,
       endCol,
       direction,
-      path,
+      path: savedPath,
     });
     
     // 4. Обновляем firstWordTime, если это первое слово игрока
