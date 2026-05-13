@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { db } from '../../lib/db';
 import { gameSessions } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { createCaller } from '../../server/trpc';
+import { createCaller } from '../../server/trpc/test';
 
 describe('gameRouter', () => {
   let testDb: typeof db;

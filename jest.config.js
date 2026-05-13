@@ -39,6 +39,8 @@ const config = {
       statements: 70,
     },
   },
+  // Temporary: disable threshold until we add more tests
+  // coverageThreshold: undefined,
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 10000,
 };
