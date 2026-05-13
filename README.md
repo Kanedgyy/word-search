@@ -41,6 +41,7 @@
 | **Superjson** | Сериализация | JSON.stringify, msgpack |
 | **Jest** | Тестирование | Vitest, Mocha, Jasmine |
 | **WebSocket** | Realtime связь | Socket.io, ws, PeerJS |
+| **Framer Motion** | Анимации | React Spring, Transition |
 
 ## 📁 Структура проекта
 
@@ -57,9 +58,11 @@ word-search-multiplayer/
 │   ├── layout.tsx            # Корневой layout
 │   └── page.tsx              # Главная страница
 ├── components/               # React компоненты
-│   ├── GameBoard.tsx         # Игровое поле 10×10
+│   ├── GameBoard.tsx         # Игровое поле 10×10 с анимациями
 │   ├── WordList.tsx          # Список слов для поиска
-│   └── PlayerList.tsx        # Список игроков
+│   ├── PlayerList.tsx        # Список игроков
+│   ├── Confetti.tsx          # Конфетти эффект для победы
+│   └── SkeletonLoader.tsx    # Skeleton компоненты для загрузки
 ├── features/                 # Feature modules (бизнес-логика)
 │   ├── game/
 │   │   ├── ui/               # Компоненты игры
@@ -436,6 +439,33 @@ npm run test:e2e
 ## 🐛 Известные проблемы
 
 1. **WebSocket** — в текущей версии используется polling для совместимости с Vercel serverless. WebSocket будет добавлен в следующей версии.
+
+## ✨ UI/UX Компоненты
+
+### Framer Motion Анимации
+
+Проект использует Framer Motion для плавных анимаций:
+
+- **GameBoard** — hover и tap эффекты на клетках
+- **WordList** — анимация появления слов, progress bar
+- **Results** — конфетти, entrance animations, spring physics
+- **Main Page** — entrance animations, button interactions
+
+### Skeleton Loaders
+
+Компоненты для отображения состояния загрузки:
+
+- `GameBoardSkeleton` — сетка 10×10
+- `WordListSkeleton` — список слов
+- `PlayerListSkeleton` — список игроков
+- `PageSkeleton` — вся страница
+
+### Доступность (a11y)
+
+- ARIA labels на всех интерактивных элементах
+- Screen reader announcements для статусов
+- Keyboard navigation support
+- Focus management
 
 ## 📝 Будущие улучшения
 
