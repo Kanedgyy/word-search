@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:create-tables": "psql $DATABASE_URL -f scripts/create-tables.sql",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
