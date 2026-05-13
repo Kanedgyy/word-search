@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 // Типы
 type Grid = string[][];
@@ -148,19 +149,21 @@ export function GameBoard({
             const bgColor = getCellBackgroundColor(rowIndex, colIndex, inPath);
             
             return (
-              <div
+              <motion.div
                 key={`${rowIndex}-${colIndex}`}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={`
                   w-12 h-12 md:w-14 md:h-14 flex items-center justify-center 
                   text-xl md:text-2xl rounded-xl cursor-pointer 
-                  transition-all duration-200 transform
+                  transition-all duration-200
                   ${inPath 
-                    ? 'text-white scale-110 shadow-xl ring-4 ring-white/30 font-black' 
-                    : 'hover:scale-105'
+                    ? 'text-white font-black ring-4 ring-white/30' 
+                    : 'text-gray-900 font-bold'
                   }
-                  ${foundColor ? 'text-white font-black ring-2 ring-white/50' : 'text-gray-900 font-bold'}
+                  ${foundColor ? 'text-white font-black ring-2 ring-white/50' : ''}
                 `}
                 style={{ 
                   backgroundColor: bgColor,
@@ -168,7 +171,7 @@ export function GameBoard({
                 }}
               >
                 {letter}
-              </div>
+              </motion.div>
             );
           })
         ))}

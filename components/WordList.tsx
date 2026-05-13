@@ -5,6 +5,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface WordListProps {
   words: string[];
@@ -21,24 +22,34 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
         📝 {title}
       </h3>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {sortedWords.map((word) => {
+        {sortedWords.map((word, index) => {
           const isFound = foundWords.has(word);
           
           return (
-            <div
+            <motion.div
               key={word}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ 
+                opacity: isFound ? 0.6 : 1,
+                scale: isFound ? 0.95 : 1,
+              }}
+              transition={{
+                duration: 0.3,
+                delay: index * 0.03,
+              }}
               className={`
                 px-3 py-3 rounded-xl text-center font-bold text-sm md:text-lg
-                transition-all duration-300 transform break-words
-                min-h-[3.5rem] flex items-center justify-center
+                transition-all duration-300
                 ${isFound 
-                  ? 'bg-gradient-to-br from-emerald-500/80 to-teal-500/80 text-white scale-95 shadow-lg shadow-emerald-500/30' 
-                  : 'bg-white/10 text-white/70 hover:bg-white/20 hover:scale-105'
+                  ? 'bg-gradient-to-br from-emerald-500/80 to-teal-500/80 text-white shadow-lg shadow-emerald-500/30' 
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
                 }
               `}
+              role="listitem"
+              aria-label={`${word} ${isFound ? 'найдено' : 'не найдено'}`}
             >
               <span className="break-words leading-tight">{word}</span>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -51,15 +62,21 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
           </span>
         </div>
         <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-          <div 
-            className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-500 shadow-lg shadow-emerald-400/50"
-            style={{ width: `${(foundWords.size / words.length) * 100}%` }}
+          <motion.div
+            className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 h-full rounded-full shadow-lg shadow-emerald-400/50"
+            initial={{ width: 0 }}
+            animate={{ width: `${(foundWords.size / words.length) * 100}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           />
         </div>
         {foundWords.size === words.length && (
-          <div className="mt-3 text-center text-amber-300 font-bold animate-pulse">
+          <motion.div
+            initial={{ scale: 0, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            className="mt-3 text-center text-amber-300 font-bold"
+          >
             🎉 Все слова найдены!
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
