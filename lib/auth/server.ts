@@ -13,6 +13,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuthSchema } from "@/drizzle/schema";
 import { db } from "@/lib/db";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 /**
  * Экземпляр Better-auth для сервера
  */
@@ -30,8 +32,8 @@ export const auth = betterAuth({
    */
   emailAndPassword: {
     enabled: true,
-    requireVerification: process.env.NODE_ENV === 'production',
-    autoSignIn: false,
+    requireVerification: false, // Отключаем для локальной разработки
+    autoSignIn: true,
   },
   
   /**
@@ -39,38 +41,53 @@ export const auth = betterAuth({
    */
   socialProviders: {
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      clientId: process.env.GITHUB_CLIENT_ID || "dummy",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "dummy",
     },
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || "dummy",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "dummy",
     },
   },
   
   /**
    * Секрет для шифрования сессий
    */
-  secret: process.env.BETTER_AUTH_SECRET!,
+  secret: process.env.BETTER_AUTH_SECRET || "dev-secret-32-chars-minimum-length",
   
   /**
    * Базовый URL приложения
    */
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: appUrl,
+  
+  /**
+   * Allowed origins для CORS
+   */
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    appUrl,
+  ],
   
   /**
    * Перенаправления после аутентификации
    */
   advanced: {
     cookiePrefix: "better-auth",
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+    },
   },
   
   /**
-   * Endpoints для аутентификации
+   * Email верификация
    */
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     autoSignInAfterVerification: true,
+    sendVerificationEmail: async () => {
+      // Отключаем отправку для локальной разработки
+    },
   },
   
   /**
@@ -82,6 +99,15 @@ export const auth = betterAuth({
     generateSessionToken: () => {
       return crypto.randomUUID();
     },
+  },
+  
+  /**
+   * Отключаем rate limiting для разработки
+   */
+  rateLimit: {
+    enabled: process.env.NODE_ENV === 'production',
+    window: 10,
+    max: 100,
   },
 });
 

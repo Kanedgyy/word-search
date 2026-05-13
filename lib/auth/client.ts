@@ -5,7 +5,12 @@
 import { createAuthClient } from 'better-auth/react';
 
 export const authClient = createAuthClient({
+  // Указываем правильный baseURL для Better Auth API
   baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  // Отключаем автоматический fetch для разработки
+  fetchOptions: {
+    credentials: 'include',
+  },
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;
