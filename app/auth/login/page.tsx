@@ -1,13 +1,12 @@
 'use client';
 
 /**
- * Страница входа в систему (Better-auth)
+ * Страница входа в систему
  */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from '@/lib/auth/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,24 +15,32 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleEmailPasswordSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      const result = await signIn.email({
-        email,
-        password,
-        callbackURL: '/',
+      const response = await fetch('/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if ('error' in result && result.error) {
-        setError(result.error.message || 'Ошибка входа');
-      } else {
-        router.push('/');
-        router.refresh();
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Ошибка входа');
+        return;
       }
+
+      // Сохраняем данные пользователя
+      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('playerName', data.user.name);
+      localStorage.setItem('userEmail', data.user.email);
+
+      // Перенаправляем на главную
+      router.push('/');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
@@ -42,29 +49,13 @@ export default function LoginPage() {
   };
 
   const handleGitHubSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await signIn.social({
-        provider: 'github',
-        callbackURL: '/',
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ошибка входа через GitHub');
-      setIsLoading(false);
-    }
+    // TODO: Реализовать OAuth
+    setError('OAuth пока не реализован. Используйте email/пароль.');
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await signIn.social({
-        provider: 'google',
-        callbackURL: '/',
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ошибка входа через Google');
-      setIsLoading(false);
-    }
+    // TODO: Реализовать OAuth
+    setError('OAuth пока не реализован. Используйте email/пароль.');
   };
 
   return (
@@ -83,7 +74,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleEmailPasswordSignIn} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-purple-200 mb-1">
               Email

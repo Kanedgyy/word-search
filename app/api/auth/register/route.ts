@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/drizzle/db';
+import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
@@ -16,6 +16,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (name.length < 2 || name.length > 20) {
+      return NextResponse.json(
+        { error: 'Имя должно быть от 2 до 20 символов' },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: 'Пароль должен быть не менее 6 символов' },
@@ -24,13 +31,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверка существования email
-    const existingUser = await db.query.users.findFirst({
+    const existingUserWithEmail = await db.query.users.findFirst({
       where: eq(users.email, email),
     });
 
-    if (existingUser) {
+    if (existingUserWithEmail) {
       return NextResponse.json(
         { error: 'Пользователь с таким email уже существует' },
+        { status: 400 }
+      );
+    }
+
+    // Проверка существования имени пользователя
+    const existingUserWithName = await db.query.users.findFirst({
+      where: eq(users.name, name),
+    });
+
+    if (existingUserWithName) {
+      return NextResponse.json(
+        { error: 'Пользователь с таким именем уже существует. Выберите другое имя.' },
         { status: 400 }
       );
     }
@@ -45,6 +64,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         passwordHash,
+        emailVerified: true,
       })
       .returning();
 
@@ -56,10 +76,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Ошибка регистрации:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack:', error.stack);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера: ' + (error.message || 'unknown error') },
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }
