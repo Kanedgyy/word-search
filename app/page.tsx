@@ -68,8 +68,8 @@ export default function Home() {
         const url = `/game/${newSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`;
         router.push(url);
       }
-    } catch (err: any) {
-      setError('Ошибка создания игры: ' + (err.message || 'Неизвестная ошибка'));
+    } catch (err: unknown) {
+      setError('Ошибка создания игры: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'));
       console.error(err);
     }
   };
@@ -95,8 +95,8 @@ export default function Home() {
       const playerId = joinData.playerId;
 
       router.push(`/game/${sessionId}?playerId=${playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}`);
-    } catch (err: any) {
-      setError('Ошибка присоединения: ' + (err.message || 'Неизвестная ошибка'));
+    } catch (err: unknown) {
+      setError('Ошибка присоединения: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'));
       console.error(err);
     }
   };

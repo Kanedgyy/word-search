@@ -13,7 +13,7 @@ export interface TestContext {
 export function createCaller(context: TestContext) {
   return {
     game: {
-      createSession: async (input: any) => {
+      createSession: async (input: unknown) => {
         return appRouter.game.createSession({
           ctx: context,
           input,
@@ -21,7 +21,7 @@ export function createCaller(context: TestContext) {
           type: 'mutation',
         } as any);
       },
-      joinSession: async (input: any) => {
+      joinSession: async (input: unknown) => {
         return appRouter.game.joinSession({
           ctx: context,
           input,
@@ -29,7 +29,7 @@ export function createCaller(context: TestContext) {
           type: 'mutation',
         } as any);
       },
-      startGame: async (input: any) => {
+      startGame: async (input: unknown) => {
         return appRouter.game.startGame({
           ctx: context,
           input,
@@ -37,7 +37,7 @@ export function createCaller(context: TestContext) {
           type: 'mutation',
         } as any);
       },
-      submitWord: async (input: any) => {
+      submitWord: async (input: unknown) => {
         return appRouter.game.submitWord({
           ctx: context,
           input,
@@ -45,7 +45,7 @@ export function createCaller(context: TestContext) {
           type: 'mutation',
         } as any);
       },
-      getSessionState: async (input: any) => {
+      getSessionState: async (input: unknown) => {
         return appRouter.game.getSessionState({
           ctx: context,
           input,

@@ -24,7 +24,7 @@ export type WSMessageType =
 export interface WSMessage {
   type: WSMessageType;
   sessionId: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 // Хранилище подключений по сессиям

@@ -125,7 +125,7 @@ export function useWebSocket({ sessionId, playerId, onMessage, enabled = true }:
     };
   }, [enabled, connect, disconnect]);
 
-  const sendMessage = useCallback((type: WSMessageType, data: any) => {
+  const sendMessage = useCallback((type: WSMessageType, data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type,

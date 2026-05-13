@@ -209,8 +209,8 @@ export class GameService {
     const players = await this.repository.getPlayersBySession(input.sessionId);
     const results = players
       .sort((a, b) => b.wordsFound - a.wordsFound)
-      .map((p, index) => ({
-        rank: index + 1,
+      .map((p) => ({
+        rank: 0, // TODO: вычислить ранг
         name: p.name,
         wordsFound: p.wordsFound,
         isBot: p.isBot,
