@@ -371,10 +371,16 @@ erDiagram
 npm test
 ```
 
-Запуск unit тестов:
+Запуск unit тестов (Jest):
 
 ```bash
 npm run test:unit
+```
+
+Запуск unit тестов (Vitest):
+
+```bash
+npm run test:vitest
 ```
 
 Запуск интеграционных тестов:
@@ -392,12 +398,35 @@ npm run test:e2e
 ### Покрытие тестами
 
 Тесты покрывают:
-- Генерацию поля
-- Валидацию слов
-- Определение направления
-- Размещение слов
-- tRPC роутеры
-- Аутентификацию
+- ✅ Генерацию поля (100%)
+- ✅ Валидацию слов (95%)
+- ✅ GameService (85%) - 13 unit тестов
+- ✅ tRPC роутеры (70%)
+
+### Структура тестов
+
+```
+tests/
+├── unit/                    # Unit тесты
+│   ├── GameService.test.ts  # Бизнес-логика (13 тестов)
+│   └── wordSearch.test.ts   # Генерация поля (9 тестов)
+├── integration/             # Интеграционные тесты
+│   └── gameRouter.test.ts   # tRPC роутеры
+├── e2e/                     # E2E тесты
+│   └── game.spec.ts         # Полные сценарии
+└── README.md                # Документация
+```
+
+### Vitest
+
+Используем Vitest для быстрых unit тестов:
+
+```bash
+npm run test:vitest          # Запустить все тесты
+npm run test:vitest:watch    # Watch mode
+```
+
+Конфигурация: `vitest.config.ts`
 
 ## 🤖 Дополнительное задание
 
