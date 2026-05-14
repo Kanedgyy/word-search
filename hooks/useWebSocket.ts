@@ -32,8 +32,11 @@ export function useWebSocket({ sessionId, playerId, onMessage, enabled = true }:
     reconnectAttempts: 0,
   });
 
+  // Отключаем WebSocket для разработки (используется polling через tRPC)
+  const WS_ENABLED = false; // ✅ Отключено для производительности
+
   const connect = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled || !WS_ENABLED) return; // ✅ Не подключаться если отключено
     
     // Определяем URL WebSocket
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';

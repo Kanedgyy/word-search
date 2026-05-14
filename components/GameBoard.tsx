@@ -24,6 +24,7 @@ interface GameBoardProps {
   playerColor?: string;
   onWordSelect?: (word: string, path: Array<{ row: number; col: number }>, direction: 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up') => void;
   foundCellsMap?: Record<string, string>;
+  isGameActive?: boolean; // ✅ Новый пропс
 }
 
 export function GameBoard({ 
@@ -31,7 +32,8 @@ export function GameBoard({
   foundWords, 
   playerColor = '#FF006E',
   onWordSelect,
-  foundCellsMap = {}
+  foundCellsMap = {},
+  isGameActive = true // ✅ По умолчанию активна
 }: GameBoardProps) {
   const [selectedPath, setSelectedPath] = useState<Coordinate[]>([]);
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -53,6 +55,8 @@ export function GameBoard({
   };
 
   const handleMouseDown = (row: number, col: number) => {
+    if (!isGameActive) return; // ✅ Блокировка если игра не активна
+
     const clicked: Coordinate = { row, col };
     const existingIndex = selectedPath.findIndex(p => p.row === row && p.col === col);
 
@@ -69,6 +73,7 @@ export function GameBoard({
   };
 
   const handleMouseEnter = (row: number, col: number) => {
+    if (!isGameActive) return; // ✅ Блокировка если игра не активна
     if (!isMouseDown || selectedPath.length === 0) return;
 
     const last = selectedPath[selectedPath.length - 1];
@@ -91,6 +96,8 @@ export function GameBoard({
 
   const handleMouseUp = () => {
     setIsMouseDown(false);
+    if (!isGameActive) return; // ✅ Блокировка если игра не активна
+    
     if (selectedPath.length >= 3 && onWordSelect) {
       const word = selectedPath.map(p => grid[p.row][p.col]).join('');
       const start = selectedPath[0];
@@ -133,7 +140,9 @@ export function GameBoard({
 
   return (
     <div 
-      className="inline-block bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 select-none border border-white/20"
+      className={`inline-block bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 select-none border border-white/20 ${
+        !isGameActive ? 'opacity-50 pointer-events-none' : ''
+      }`}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onContextMenu={handleContextMenu}
@@ -149,12 +158,10 @@ export function GameBoard({
             const bgColor = getCellBackgroundColor(rowIndex, colIndex, inPath);
             
             return (
-              <motion.div
+              <div
                 key={`${rowIndex}-${colIndex}`}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className={`
                   w-12 h-12 md:w-14 md:h-14 flex items-center justify-center 
                   text-xl md:text-2xl rounded-xl cursor-pointer 
@@ -167,11 +174,13 @@ export function GameBoard({
                 `}
                 style={{ 
                   backgroundColor: bgColor,
-                  boxShadow: inPath || foundColor ? `0 0 20px ${inPath ? playerColor : foundColor}88` : 'none'
+                  boxShadow: inPath || foundColor ? `0 0 20px ${inPath ? playerColor : foundColor}88` : 'none',
+                  // ✅ Убираем hover эффекты для производительности
+                  transform: 'none !important',
                 }}
               >
                 {letter}
-              </motion.div>
+              </div>
             );
           })
         ))}

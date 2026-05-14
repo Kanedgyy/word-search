@@ -708,6 +708,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 playerColor={gameState.player?.color || '#FF006E'}
                 onWordSelect={handleWordSelect}
                 foundCellsMap={gameState.foundCellsMap}
+                isGameActive={gameState.status === 'in_progress'} // ✅ Блокируем после окончания игры
               />
             ) : (
               <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-8 text-center border border-white/20">
