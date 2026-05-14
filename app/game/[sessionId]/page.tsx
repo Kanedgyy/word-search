@@ -748,117 +748,99 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         {isGameFinished && (
           <>
             <Confetti />
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 relative z-50"
-              style={{
-                pointerEvents: 'auto',
-              }}
+            {/* Modal overlay */}
+            <div 
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              style={{ pointerEvents: 'auto' }}
             >
-              <motion.h2
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text"
+              <motion.div
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+                className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
               >
-                🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
-              </motion.h2>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {gameState.players
-                  .sort((a, b) => {
-                    if (b.wordsFound !== a.wordsFound) {
-                      return b.wordsFound - a.wordsFound;
-                    }
-                    const aTime = a.firstWordTime ?? Infinity;
-                    const bTime = b.firstWordTime ?? Infinity;
-                    return aTime - bTime;
-                  })
-                  .map((player, index) => (
-                    <motion.div
-                      key={player.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + index * 0.1, type: 'spring' }}
-                      whileHover={{ scale: 1.05 }}
-                      className={`p-6 rounded-2xl border-2 transition-all ${
-                        index === 0 
-                          ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40' 
-                          : 'bg-white/5 border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <motion.div 
-                            className="relative"
-                            whileHover={{ rotate: [0, -10, 10, 0] }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {index === 0 && (
-                              <motion.span
-                                animate={{ y: [0, -10, 0] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                                className="text-4xl absolute -top-2 -left-2"
-                              >
-                                👑
-                              </motion.span>
-                            )}
+                <motion.h2
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                  className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text"
+                >
+                  🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
+                </motion.h2>
+                
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {gameState.players
+                    .sort((a, b) => {
+                      if (b.wordsFound !== a.wordsFound) {
+                        return b.wordsFound - a.wordsFound;
+                      }
+                      const aTime = a.firstWordTime ?? Infinity;
+                      const bTime = b.firstWordTime ?? Infinity;
+                      return aTime - bTime;
+                    })
+                    .map((player, index) => (
+                      <motion.div
+                        key={player.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + index * 0.1, type: 'spring' }}
+                        className={`p-6 rounded-2xl border-2 transition-all ${
+                          index === 0 
+                            ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40' 
+                            : 'bg-white/5 border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
                             <div 
                               className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg border-4 border-white/30"
                               style={{ backgroundColor: player.color }}
                             >
                               {player.name.charAt(0).toUpperCase()}
                             </div>
-                          </motion.div>
-                          <div>
-                            <div className="font-bold text-white text-lg flex items-center gap-2">
-                              {player.name}
-                              {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
-                              {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
-                            </div>
-                            <div className="text-sm text-white/70 mt-1">
-                              {onTimeLimit ? (
-                                <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
-                              ) : (
-                                <>📝 слов: {player.wordsFound}</>
-                              )}
+                            <div>
+                              <div className="font-bold text-white text-lg flex items-center gap-2">
+                                {player.name}
+                                {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
+                                {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
+                              </div>
+                              <div className="text-sm text-white/70 mt-1">
+                                {onTimeLimit ? (
+                                  <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
+                                ) : (
+                                  <>📝 слов: {player.wordsFound}</>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          <div className="text-4xl font-black" style={{ color: player.color }}>
+                            {player.wordsFound}
+                          </div>
                         </div>
-                        <div className="text-4xl font-black" style={{ color: player.color }}>
-                          {player.wordsFound}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-              </div>
+                      </motion.div>
+                    ))}
+                </div>
 
-              <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
-                {!gameState.rematchSessionId && (
+                <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
+                  {!gameState.rematchSessionId && (
+                    <button
+                      onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                      disabled={rematchMutation.isPending}
+                      className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
+                    >
+                      {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
+                    </button>
+                  )}
                   <button
-                    onClick={() => rematchMutation.mutate({ sessionId, playerId })}
-                    disabled={rematchMutation.isPending}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 relative z-50"
-                    style={{
-                      pointerEvents: 'auto',
-                    }}
+                    onClick={() => router.push('/')}
+                    className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
                   >
-                    {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
+                    🏠 Главная
                   </button>
-                )}
-                <button
-                  onClick={() => router.push('/')}
-                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all relative z-50"
-                  style={{
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  🏠 Главная
-                </button>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            </div>
           </>
         )}
       </div>
