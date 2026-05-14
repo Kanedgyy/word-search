@@ -48,14 +48,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleGitHubSignIn = async () => {
-    // TODO: Реализовать OAuth
-    setError('OAuth пока не реализован. Используйте email/пароль.');
+  const handleGitHubSignIn = () => {
+    // Перенаправляем на Better Auth GitHub OAuth
+    window.location.href = '/api/auth/sign-in/github';
   };
 
-  const handleGoogleSignIn = async () => {
-    // TODO: Реализовать OAuth
-    setError('OAuth пока не реализован. Используйте email/пароль.');
+  const handleGoogleSignIn = () => {
+    // Перенаправляем на Better Auth Google OAuth
+    window.location.href = '/api/auth/sign-in/google';
   };
 
   return (
