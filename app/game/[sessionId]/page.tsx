@@ -752,7 +752,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20"
+              className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 pointer-events-auto"
             >
               <motion.h2
                 initial={{ scale: 0 }}
@@ -834,24 +834,20 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
               <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
                 {!gameState.rematchSessionId && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => rematchMutation.mutate({ sessionId, playerId })}
                     disabled={rematchMutation.isPending}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
+                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 pointer-events-auto"
                   >
                     {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
-                  </motion.button>
+                  </button>
                 )}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => router.push('/')}
-                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
+                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all pointer-events-auto"
                 >
                   🏠 Главная
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </>

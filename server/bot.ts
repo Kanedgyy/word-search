@@ -622,25 +622,25 @@ export class BotFactory {
   ): GameBot {
     const configs = {
       easy: {
-        minDelay: 3200,      // 3.2 секунды минимум
-        maxDelay: 8000,      // 8 секунд максимум
-        accuracy: 0.35,      // 35% точность
-        knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.25,    // 25% шанс "зависнуть"
+        minDelay: 1600, // Уменьшено в 2 раза (было 3200)
+        maxDelay: 4000, // Уменьшено в 2 раза (было 8000)
+        accuracy: 0.70, // Увеличено в 2 раза (было 0.35)
+        knownWordsRatio: 1.0,
+        skipChance: 0.12, // Уменьшено в 2 раза (было 0.25)
       },
       medium: {
-        minDelay: 2000,      // 2 секунды
-        maxDelay: 6000,      // 6 секунд
-        accuracy: 0.45,      // 45% точность
-        knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.20,    // 20% шанс пропустить ход
+        minDelay: 1000, // Уменьшено в 2 раза (было 2000)
+        maxDelay: 3000, // Уменьшено в 2 раза (было 6000)
+        accuracy: 0.90, // Увеличено в 2 раза (было 0.45)
+        knownWordsRatio: 1.0,
+        skipChance: 0.10, // Уменьшено в 2 раза (было 0.20)
       },
       hard: {
-        minDelay: 1200,      // 1.2 секунды
-        maxDelay: 4000,      // 4 секунды
-        accuracy: 0.60,      // 60% точность
-        knownWordsRatio: 1.0,// Знает ВСЕ слова
-        skipChance: 0.10,    // 10% шанс пропустить ход
+        minDelay: 600, // Уменьшено в 2 раза (было 1200)
+        maxDelay: 2000, // Уменьшено в 2 раза (было 4000)
+        accuracy: 0.95, // Увеличено (было 0.60)
+        knownWordsRatio: 1.0,
+        skipChance: 0.05, // Уменьшено в 2 раза (было 0.10)
       },
     };
 

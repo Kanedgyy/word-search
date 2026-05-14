@@ -134,20 +134,20 @@ export function createBot(config: BotConfig): BotConfig {
 export const BOT_PRESETS = {
   easy: createBot({
     name: 'Бот-Новичок',
-    averageSpeed: 15, // 15 секунд между словами
-    errorRate: 0.3,
+    averageSpeed: 7.5, // Уменьшено в 2 раза (было 15)
+    errorRate: 0.15, // Уменьшено в 2 раза (было 0.3)
     difficulty: 'easy',
   }),
   medium: createBot({
     name: 'Бот-Любитель',
-    averageSpeed: 8,
-    errorRate: 0.15,
+    averageSpeed: 4, // Уменьшено в 2 раза (было 8)
+    errorRate: 0.075, // Уменьшено в 2 раза (было 0.15)
     difficulty: 'medium',
   }),
   hard: createBot({
     name: 'Бот-Профи',
-    averageSpeed: 4,
-    errorRate: 0.05,
+    averageSpeed: 2, // Уменьшено в 2 раза (было 4)
+    errorRate: 0.025, // Уменьшено в 2 раза (было 0.05)
     difficulty: 'hard',
   }),
 };
