@@ -21,34 +21,35 @@ export function WordList({ words, foundWords, title = 'Найти слова:' }
       <h3 className="text-xl font-black mb-4 text-white flex items-center gap-2">
         📝 {title}
       </h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="flex flex-wrap gap-2">
         {sortedWords.map((word, index) => {
           const isFound = foundWords.has(word);
           
           return (
             <motion.div
               key={word}
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
               animate={{ 
-                opacity: isFound ? 0.6 : 1,
-                scale: isFound ? 0.95 : 1,
+                opacity: isFound ? 0.5 : 1,
+                scale: isFound ? 0.9 : 1,
+                y: 0,
               }}
               transition={{
                 duration: 0.3,
                 delay: index * 0.03,
               }}
               className={`
-                px-3 py-3 rounded-xl text-center font-bold text-sm md:text-lg
+                px-4 py-2 rounded-lg text-center font-bold text-sm whitespace-nowrap
                 transition-all duration-300
                 ${isFound 
-                  ? 'bg-gradient-to-br from-emerald-500/80 to-teal-500/80 text-white shadow-lg shadow-emerald-500/30' 
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/20'
                 }
               `}
               role="listitem"
               aria-label={`${word} ${isFound ? 'найдено' : 'не найдено'}`}
             >
-              <span className="break-words leading-tight">{word}</span>
+              {word}
             </motion.div>
           );
         })}

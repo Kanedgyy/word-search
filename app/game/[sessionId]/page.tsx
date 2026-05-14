@@ -803,19 +803,35 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                   ))}
               </div>
 
-              <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
+              <div className="mt-8 text-center flex flex-wrap gap-4 justify-center relative z-50">
                 {!gameState.rematchSessionId && (
                   <button
-                    onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                    onClick={() => {
+                      console.log('Клик Реванш!');
+                      rematchMutation.mutate({ sessionId, playerId });
+                    }}
                     disabled={rematchMutation.isPending}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
+                    style={{ 
+                      position: 'relative', 
+                      zIndex: 60,
+                      pointerEvents: 'auto',
+                    }}
+                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
                   </button>
                 )}
                 <button
-                  onClick={() => router.push('/')}
-                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
+                  onClick={() => {
+                    console.log('Клик Главная!');
+                    router.push('/');
+                  }}
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 60,
+                    pointerEvents: 'auto',
+                  }}
+                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all cursor-pointer"
                 >
                   🏠 Главная
                 </button>

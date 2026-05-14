@@ -158,7 +158,7 @@ export function GameBoard({
             const bgColor = getCellBackgroundColor(rowIndex, colIndex, inPath);
             
             return (
-              <div
+              <motion.div
                 key={`${rowIndex}-${colIndex}`}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
@@ -175,12 +175,19 @@ export function GameBoard({
                 style={{ 
                   backgroundColor: bgColor,
                   boxShadow: inPath || foundColor ? `0 0 20px ${inPath ? playerColor : foundColor}88` : 'none',
-                  // ✅ Убираем hover эффекты для производительности
                   transform: 'none !important',
                 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {letter}
-              </div>
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                >
+                  {letter}
+                </motion.span>
+              </motion.div>
             );
           })
         ))}
