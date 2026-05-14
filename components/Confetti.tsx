@@ -7,22 +7,20 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-interface ConfettiPiece {
-  id: number;
-  x: number;
-  y: number;
-  rotation: number;
-  color: string;
-  delay: number;
-}
-
 const COLORS = ['#FF006E', '#3A86FF', '#8338EC', '#FB5607', '#FFBE0B', '#06D6A0', '#FFD60A'];
 
 export function Confetti() {
-  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
+  const [pieces, setPieces] = useState<Array<{
+    id: number;
+    x: number;
+    y: number;
+    rotation: number;
+    color: string;
+    delay: number;
+  }>>([]);
 
   useEffect(() => {
-    const newPieces: ConfettiPiece[] = Array.from({ length: 50 }).map((_, i) => ({
+    const newPieces = Array.from({ length: 100 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: -10 - Math.random() * 20,
@@ -34,7 +32,11 @@ export function Confetti() {
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden z-50" aria-hidden="true" style={{ pointerEvents: 'none' }}>
+    <div 
+      className="fixed inset-0 z-[100] overflow-hidden"
+      style={{ pointerEvents: 'none' }}
+      aria-hidden="true"
+    >
       {pieces.map((piece) => (
         <motion.div
           key={piece.id}
@@ -43,15 +45,8 @@ export function Confetti() {
             left: `${piece.x}%`,
             backgroundColor: piece.color,
           }}
-          initial={{
-            y: -20,
-            x: `${piece.x}%`,
-            rotate: 0,
-          }}
-          animate={{
-            y: '110vh',
-            rotate: piece.rotation + 720,
-          }}
+          initial={{ y: -20, rotate: 0 }}
+          animate={{ y: '110vh', rotate: piece.rotation + 720 }}
           transition={{
             duration: 3 + Math.random() * 2,
             delay: piece.delay,
@@ -64,3 +59,4 @@ export function Confetti() {
     </div>
   );
 }
+
