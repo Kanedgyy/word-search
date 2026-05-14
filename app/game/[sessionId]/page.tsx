@@ -807,8 +807,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 {!gameState.rematchSessionId && (
                   <button
                     onClick={() => {
-                      console.log('Клик Реванш!');
-                      rematchMutation.mutate({ sessionId, playerId });
+                      console.log('Клик Реванш! sessionId:', sessionId, 'playerId:', playerId);
+                      console.log('rematchMutation:', rematchMutation);
+                      rematchMutation.mutate({ sessionId, playerId }, {
+                        onSuccess: (data) => {
+                          console.log('Реванш успех:', data);
+                        },
+                        onError: (error) => {
+                          console.error('Реванш ошибка:', error);
+                        }
+                      });
                     }}
                     disabled={rematchMutation.isPending}
                     style={{ 
@@ -823,8 +831,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 )}
                 <button
                   onClick={() => {
-                    console.log('Клик Главная!');
-                    router.push('/');
+                    console.log('Клик Главная! Переход на /');
+                    window.location.href = '/';
                   }}
                   style={{ 
                     position: 'relative', 
