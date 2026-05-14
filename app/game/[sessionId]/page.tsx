@@ -8,7 +8,6 @@ import { GameBoard } from '../../../components/GameBoard';
 import { FoundWordsList } from '../../../components/FoundWordsList';
 import { PlayerList } from '../../../components/PlayerList';
 import { WordList } from '../../../components/WordList';
-import { Confetti } from '../../../components/Confetti';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { WSMessage } from '../../../server/websocket';
 
@@ -746,12 +745,33 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
         {/* Результаты игры */}
         {isGameFinished && (
-          <>
-            <Confetti />
-            <div className="relative z-10 mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-              <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text">
-                🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
-              </h2>
+          <div className="relative z-20 mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 overflow-visible">
+            {/* Confetti внутри результатов */}
+            <div className="absolute inset-0 overflow-hidden z-50 pointer-events-none" aria-hidden="true">
+              {Array.from({ length: 50 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-3 h-3 rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    backgroundColor: ['#FF006E', '#3A86FF', '#8338EC', '#FB5607', '#FFBE0B', '#06D6A0', '#FFD60A'][Math.floor(Math.random() * 7)],
+                  }}
+                  initial={{ y: -20, rotate: 0 }}
+                  animate={{ y: '100vh', rotate: Math.random() * 720 }}
+                  transition={{
+                    duration: 3 + Math.random() * 2,
+                    delay: Math.random() * 0.5,
+                    ease: 'linear',
+                    repeat: Infinity,
+                    repeatDelay: 1,
+                  }}
+                />
+              ))}
+            </div>
+            
+            <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text relative z-10">
+              🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
+            </h2>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {gameState.players
@@ -806,22 +826,29 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
                 {!gameState.rematchSessionId && (
                   <button
-                    onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                    onClick={(e) => {
+                      console.log('Реванш клик!', e);
+                      rematchMutation.mutate({ sessionId, playerId });
+                    }}
                     disabled={rematchMutation.isPending}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
+                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 relative z-50"
+                    style={{ cursor: 'pointer' }}
                   >
                     {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
                   </button>
                 )}
                 <button
-                  onClick={() => router.push('/')}
-                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
+                  onClick={(e) => {
+                    console.log('Главная клик!', e);
+                    router.push('/');
+                  }}
+                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all relative z-50"
+                  style={{ cursor: 'pointer' }}
                 >
                   🏠 Главная
                 </button>
               </div>
             </div>
-          </>
         )}
       </div>
     </div>
