@@ -141,11 +141,15 @@ export function GameBoard({
   return (
     <div 
       className={`inline-block bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 select-none border border-white/20 ${
-        !isGameActive ? 'opacity-50 pointer-events-none' : ''
+        !isGameActive ? 'opacity-50' : ''
       }`}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onContextMenu={handleContextMenu}
+      style={{
+        // Полностью отключаем взаимодействие когда игра не активна
+        pointerEvents: !isGameActive ? 'none' : 'auto',
+      }}
     >
       <div 
         className="grid gap-2"

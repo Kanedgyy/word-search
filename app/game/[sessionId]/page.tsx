@@ -752,7 +752,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 pointer-events-auto"
+              className="mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 relative z-50"
+              style={{
+                pointerEvents: 'auto',
+              }}
             >
               <motion.h2
                 initial={{ scale: 0 }}
@@ -837,14 +840,20 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                   <button
                     onClick={() => rematchMutation.mutate({ sessionId, playerId })}
                     disabled={rematchMutation.isPending}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 pointer-events-auto"
+                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 relative z-50"
+                    style={{
+                      pointerEvents: 'auto',
+                    }}
                   >
                     {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
                   </button>
                 )}
                 <button
                   onClick={() => router.push('/')}
-                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all pointer-events-auto"
+                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all relative z-50"
+                  style={{
+                    pointerEvents: 'auto',
+                  }}
                 >
                   🏠 Главная
                 </button>
