@@ -466,8 +466,12 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => router.push('/')}
-              className="text-4xl font-black text-white bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent hover:scale-105 transition-transform cursor-pointer"
+              onClick={() => {
+                console.log('Клик Филворд! Переход на /');
+                window.location.href = '/';
+              }}
+              style={{ pointerEvents: 'auto', zIndex: 60, position: 'relative' }}
+              className="text-4xl font-black bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent hover:scale-105 transition-transform cursor-pointer"
             >
               🎮 Филворд
             </button>
@@ -808,15 +812,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                   <button
                     onClick={() => {
                       console.log('Клик Реванш! sessionId:', sessionId, 'playerId:', playerId);
-                      console.log('rematchMutation:', rematchMutation);
-                      rematchMutation.mutate({ sessionId, playerId }, {
-                        onSuccess: (data) => {
-                          console.log('Реванш успех:', data);
-                        },
-                        onError: (error) => {
-                          console.error('Реванш ошибка:', error);
-                        }
-                      });
+                      handleJoinRematch();
                     }}
                     disabled={rematchMutation.isPending}
                     style={{ 
