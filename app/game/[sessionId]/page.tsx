@@ -748,93 +748,77 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         {isGameFinished && (
           <>
             <Confetti />
-            {/* Modal overlay - пропускаем клики сквозь себя */}
-            <div 
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-              style={{ pointerEvents: 'none' }} // ❗️Пропускаем клики сквозь overlay
-            >
-              {/* Modal content - получает все клики */}
-              <div
-                className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto mx-auto"
-                style={{ pointerEvents: 'auto' }} // ❗️Контент принимает клики
-              >
-                <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text">
-                  🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
-                </h2>
-                
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {gameState.players
-                    .sort((a, b) => {
-                      if (b.wordsFound !== a.wordsFound) {
-                        return b.wordsFound - a.wordsFound;
-                      }
-                      const aTime = a.firstWordTime ?? Infinity;
-                      const bTime = b.firstWordTime ?? Infinity;
-                      return aTime - bTime;
-                    })
-                    .map((player, index) => (
-                      <div
-                        key={player.id}
-                        className={`p-6 rounded-2xl border-2 transition-all ${
-                          index === 0 
-                            ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40' 
-                            : 'bg-white/5 border-white/20'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div 
-                              className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg border-4 border-white/30"
-                              style={{ backgroundColor: player.color }}
-                            >
-                              {player.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-bold text-white text-lg flex items-center gap-2">
-                                {player.name}
-                                {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
-                                {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
-                              </div>
-                              <div className="text-sm text-white/70 mt-1">
-                                {onTimeLimit ? (
-                                  <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
-                                ) : (
-                                  <>📝 слов: {player.wordsFound}</>
-                                )}
-                              </div>
-                            </div>
+            <div className="relative z-10 mt-12 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+              <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text">
+                🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
+              </h2>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {gameState.players
+                  .sort((a, b) => {
+                    if (b.wordsFound !== a.wordsFound) {
+                      return b.wordsFound - a.wordsFound;
+                    }
+                    const aTime = a.firstWordTime ?? Infinity;
+                    const bTime = b.firstWordTime ?? Infinity;
+                    return aTime - bTime;
+                  })
+                  .map((player, index) => (
+                    <div
+                      key={player.id}
+                      className={`p-6 rounded-2xl border-2 transition-all ${
+                        index === 0 
+                          ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40' 
+                          : 'bg-white/5 border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg border-4 border-white/30"
+                            style={{ backgroundColor: player.color }}
+                          >
+                            {player.name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="text-4xl font-black" style={{ color: player.color }}>
-                            {player.wordsFound}
+                          <div>
+                            <div className="font-bold text-white text-lg flex items-center gap-2">
+                              {player.name}
+                              {player.isBot && <span className="text-xs bg-white/20 px-2 py-0.5 rounded">🤖</span>}
+                              {index === 0 && <span className="text-xs bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-0.5 rounded font-bold">1⃣</span>}
+                            </div>
+                            <div className="text-sm text-white/70 mt-1">
+                              {onTimeLimit ? (
+                                <>⚡ {player.wordsFound > 0 ? (player.firstWordTime !== null && player.firstWordTime !== undefined ? player.firstWordTime + ' сек' : '—') : '-'}</>
+                              ) : (
+                                <>📝 слов: {player.wordsFound}</>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <div className="text-4xl font-black" style={{ color: player.color }}>
+                          {player.wordsFound}
+                        </div>
                       </div>
-                    ))}
-                </div>
+                    </div>
+                  ))}
+              </div>
 
-                <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
-                  {!gameState.rematchSessionId && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rematchMutation.mutate({ sessionId, playerId });
-                      }}
-                      disabled={rematchMutation.isPending}
-                      className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
-                    >
-                      {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
-                    </button>
-                  )}
+              <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
+                {!gameState.rematchSessionId && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push('/');
-                    }}
-                    className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
+                    onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                    disabled={rematchMutation.isPending}
+                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
                   >
-                    🏠 Главная
+                    {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
                   </button>
-                </div>
+                )}
+                <button
+                  onClick={() => router.push('/')}
+                  className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
+                >
+                  🏠 Главная
+                </button>
               </div>
             </div>
           </>

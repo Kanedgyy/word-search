@@ -146,10 +146,6 @@ export function GameBoard({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onContextMenu={handleContextMenu}
-      style={{
-        // Полностью отключаем взаимодействие когда игра не активна
-        pointerEvents: !isGameActive ? 'none' : 'auto',
-      }}
     >
       <div 
         className="grid gap-2"
