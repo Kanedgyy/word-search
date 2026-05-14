@@ -471,7 +471,7 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                 window.location.href = '/';
               }}
               style={{ pointerEvents: 'auto', zIndex: 60, position: 'relative' }}
-              className="text-4xl font-black bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent hover:scale-105 transition-transform cursor-pointer"
+              className="text-5xl font-black text-white bg-gradient-to-r from-yellow-200 via-pink-200 to-cyan-200 bg-clip-text text-transparent hover:scale-105 transition-transform cursor-pointer"
             >
               🎮 Филворд
             </button>
