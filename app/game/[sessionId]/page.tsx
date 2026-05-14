@@ -748,26 +748,19 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         {isGameFinished && (
           <>
             <Confetti />
-            {/* Modal overlay */}
+            {/* Modal overlay - пропускаем клики сквозь себя */}
             <div 
               className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-              style={{ pointerEvents: 'auto' }}
+              style={{ pointerEvents: 'none' }} // ❗️Пропускаем клики сквозь overlay
             >
-              <motion.div
-                initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
+              {/* Modal content - получает все клики */}
+              <div
+                className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto mx-auto"
+                style={{ pointerEvents: 'auto' }} // ❗️Контент принимает клики
               >
-                <motion.h2
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                  className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text"
-                >
+                <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text">
                   🏆 {onTimeLimit ? 'Итоги игры на время' : 'Итоги игры'} 🏆
-                </motion.h2>
+                </h2>
                 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {gameState.players
@@ -780,11 +773,8 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                       return aTime - bTime;
                     })
                     .map((player, index) => (
-                      <motion.div
+                      <div
                         key={player.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 + index * 0.1, type: 'spring' }}
                         className={`p-6 rounded-2xl border-2 transition-all ${
                           index === 0 
                             ? 'bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400 shadow-2xl shadow-yellow-500/40' 
@@ -818,14 +808,17 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                             {player.wordsFound}
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                 </div>
 
                 <div className="mt-8 text-center flex flex-wrap gap-4 justify-center">
                   {!gameState.rematchSessionId && (
                     <button
-                      onClick={() => rematchMutation.mutate({ sessionId, playerId })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rematchMutation.mutate({ sessionId, playerId });
+                      }}
                       disabled={rematchMutation.isPending}
                       className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50"
                     >
@@ -833,13 +826,16 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
                     </button>
                   )}
                   <button
-                    onClick={() => router.push('/')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push('/');
+                    }}
                     className="px-10 py-4 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-purple-500/40 transition-all"
                   >
                     🏠 Главная
                   </button>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </>
         )}
