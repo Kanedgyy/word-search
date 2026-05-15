@@ -412,6 +412,7 @@ describe('GameService', () => {
       vi.mocked(mockRepository.wordExists).mockResolvedValue(false);
       vi.mocked(mockRepository.updatePlayer).mockResolvedValue(mockPlayer);
       vi.mocked(mockRepository.getPlayersBySession).mockResolvedValue([mockPlayer]);
+      vi.mocked(mockRepository.getFoundWordsBySession).mockResolvedValue([]);
 
       const result = await gameService.submitWord({
         sessionId: 'session-123',
