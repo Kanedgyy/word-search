@@ -108,9 +108,21 @@ export async function getSession() {
 
 /**
  * Проверка роли пользователя
+ * 
+ * @param userId - ID пользователя
+ * @param requiredRole - Требуемая роль
+ * @returns true если у пользователя есть нужная роль
  */
 export async function checkUserRole(userId: string, requiredRole: 'user' | 'admin'): Promise<boolean> {
-  // TODO: Реализовать проверку роли через БД
-  // Пока что все пользователи имеют роль 'user'
+  // Проверка через БД (если пользователь не существует, считаем что роль user)
+  if (!userId) {
+    return requiredRole === 'user';
+  }
+
+  // Временная заглушка - пока все пользователи имеют роль 'user'
+  // В будущем здесь будет запрос к БД для получения роли
+  // const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  // return user?.role === requiredRole;
+  
   return requiredRole === 'user';
 }

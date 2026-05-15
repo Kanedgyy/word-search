@@ -2,13 +2,15 @@
  * Сервис игры — чистая бизнес-логика
  * Не зависит от фреймворков и БД
  * 
- * Использует репозиторий для доступа к данным, что позволяет:
+ * Использует репозиторий для доступа к данным и сервис для генерации поля,
+ * что позволяет:
  * - Тестировать сервис без БД (mock репозиторий)
  * - Заменять реализацию репозитория (PostgreSQL → SQLite для тестов)
  * - Соблюдать принцип Dependency Inversion
+ * - Полностью отделить бизнес-логику от фреймворков
  */
 
-import { AppError, isAppError } from './GameErrors';
+import { AppError } from './GameErrors';
 import type { GameRepository } from './GameRepository';
 import type { 
   GameSession, 
@@ -16,12 +18,25 @@ import type {
   CreateSessionInput, 
   JoinSessionInput, 
   SubmitWordInput,
-  Coordinate,
   FoundWord
 } from './types';
 
+/**
+ * Интерфейс сервиса генерации поля
+ * Отдельный контракт для зависимости
+ */
+export interface WordSearchService {
+  generate(words: string[]): {
+    grid: string[][];
+    placedWords: string[];
+    failedWords: string[];
+  };
+  getRandomSubset(count: number): string[];
+}
+
 export interface GameServiceOptions {
   repository: GameRepository;
+  wordSearchService: WordSearchService;
 }
 
 /**
@@ -35,11 +50,24 @@ interface GameResult {
   firstWordTime: number | null;
 }
 
+/**
+ * Сервис игры с полной зависимостью от абстракций
+ * 
+ * @example
+ * ```typescript
+ * const service = new GameService({
+ *   repository: new DrizzleGameRepository(db),
+ *   wordSearchService: new WordSearchServiceImpl()
+ * });
+ * ```
+ */
 export class GameService {
   private repository: GameRepository;
+  private wordSearchService: WordSearchService;
 
   constructor(options: GameServiceOptions) {
     this.repository = options.repository;
+    this.wordSearchService = options.wordSearchService;
   }
 
   /**
@@ -59,16 +87,14 @@ export class GameService {
       throw new AppError('VALIDATION_ERROR', 'Длительность должна быть от 60 до 600 секунд');
     }
 
-    // Генерируем поле и слова (вызов к внешнему сервису)
-    const { generateWordSearch } = await import('@/features/game/utils/wordSearch');
-    const randomWords = await import('@/features/game/utils/wordSearch');
-    const wordList = randomWords.getRandomWordSubset(12);
-    const { grid } = generateWordSearch(wordList);
+    // Генерируем поле и слова через injected сервис
+    const wordList = this.wordSearchService.getRandomSubset(12);
+    const { grid, placedWords } = this.wordSearchService.generate(wordList);
 
     const session = await this.repository.createSession({
       ...input,
       grid,
-      wordList,
+      wordList: placedWords,
       status: 'waiting',
       endsAt: null,
       rematchSessionId: null,
@@ -340,9 +366,11 @@ export class GameService {
     for (let i = 0; i < sortedPlayers.length; i++) {
       const player = sortedPlayers[i];
       if (player.wordsFound > 0) {
+        // Получаем userId из репозитория (нужно добавить метод getPlayer)
+        const fullPlayer = await this.repository.getPlayer(player.id);
         await this.repository.recordMatchHistory({
           sessionId,
-          userId: null, // Нужно получить из player
+          userId: fullPlayer?.userId ?? null,
           playerName: player.name,
           wordsFound: player.wordsFound,
           firstWordTime: player.firstWordTime,

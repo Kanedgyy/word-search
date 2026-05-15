@@ -16,9 +16,19 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AppError } from '@/core/game/GameErrors';
-import { GameService } from '@/core/game/GameService';
+import { GameService, type WordSearchService } from '@/core/game/GameService';
 import type { GameRepository } from '@/core/game/GameRepository';
 import type { GameSession, Player } from '@/core/game/types';
+
+// Mock WordSearchService
+const createMockWordSearchService = (): WordSearchService => ({
+  generate: vi.fn(() => ({
+    grid: Array(10).fill(null).map(() => Array(10).fill('A')),
+    placedWords: ['ТЕСТ', 'ИГРА'],
+    failedWords: [],
+  })),
+  getRandomSubset: vi.fn(() => ['ТЕСТ', 'ИГРА', 'КОД', 'JAVA']),
+});
 
 // Mock репозитория
 const createMockRepository = (): GameRepository => ({
@@ -38,11 +48,16 @@ const createMockRepository = (): GameRepository => ({
 
 describe('GameService', () => {
   let mockRepository: GameRepository;
+  let mockWordSearchService: WordSearchService;
   let gameService: GameService;
 
   beforeEach(() => {
     mockRepository = createMockRepository();
-    gameService = new GameService({ repository: mockRepository });
+    mockWordSearchService = createMockWordSearchService();
+    gameService = new GameService({
+      repository: mockRepository,
+      wordSearchService: mockWordSearchService,
+    });
   });
 
   describe('createSession', () => {

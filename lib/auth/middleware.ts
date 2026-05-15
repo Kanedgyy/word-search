@@ -47,7 +47,8 @@ export async function authMiddleware(request: NextRequest) {
   // Добавляем userId в headers для последующих запросов
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-user-id', session.user.id);
-  requestHeaders.set('x-user-role', 'user'); // TODO: Реализовать роли
+  // Временная заглушка для роли - в будущем будет динамически получаться из БД
+  requestHeaders.set('x-user-role', 'user');
   
   return NextResponse.next({
     request: {
