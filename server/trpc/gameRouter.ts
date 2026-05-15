@@ -856,7 +856,7 @@ const addBot = publicProcedure
   const rematch = publicProcedure
     .input(z.object({
       sessionId: z.string(),
-      playerId: z.string(), // ID игрока, запросившего реванш
+      playerId: z.string(), // ID игрока, запросившего реванш (станет хостом)
     }))
     .mutation(async ({ ctx, input }) => {
       const oldSession = await ctx.db.query.gameSessions.findFirst({
@@ -867,7 +867,19 @@ const addBot = publicProcedure
         throw new Error('Сессия не найдена');
       }
       
-      // Создаём новую сессию
+      // Получаем userId запрашивающего игрока чтобы сделать его хостом
+      const requestingPlayer = await ctx.db.query.gamePlayers.findFirst({
+        where: and(
+          eq(gamePlayers.sessionId, input.sessionId),
+          eq(gamePlayers.id, input.playerId)
+        ),
+      });
+      
+      if (!requestingPlayer) {
+        throw new Error('Игрок не найден');
+      }
+      
+      // Создаём новую сессию с новым хостом
       const wordList = getRandomWordSubset(12);
       const { grid, placedWords } = generateWordSearch(wordList);
       
@@ -879,6 +891,7 @@ const addBot = publicProcedure
         duration: oldSession.duration,
         gameMode: oldSession.gameMode,
         onTimeLimit: oldSession.onTimeLimit ?? false,
+        hostUserId: requestingPlayer.userId ?? null, // Новый хост — тот кто запросил реванш
       }).returning();
       
       // Записываем ссылку на реванш в старую сессию

@@ -248,12 +248,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         const userId = localStorage.getItem('userId') || undefined;
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: data.sessionId,
-          playerName: localStorage.getItem('playerName') || 'Игрок',
+          playerName: playerName || 'Игрок',
           userId
         });
-        const name = localStorage.getItem('playerName') || 'Игрок';
-        const color = localStorage.getItem('playerColor') || '#4ECDC4';
-        router.push(`/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`);
+        router.push(`/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
       } catch (err: any) {
         setMessage('Ошибка перехода в реванш: ' + err.message);
       }
@@ -261,13 +259,14 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
 
   const handleJoinRematch = async () => {
-    // Если rematchSessionId ещё нет - хост должен создать реванш
+    // Если rematchSessionId ещё нет - создаём реванш (только для хоста)
     if (!gameState?.rematchSessionId) {
       console.log('[handleJoinRematch] Создаю реванш...');
       rematchMutation.mutate({ sessionId, playerId });
       return;
     }
     
+    console.log('[handleJoinRematch] Присоединяюсь к реваншу:', gameState.rematchSessionId);
     console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
     try {
       const userId = localStorage.getItem('userId') || undefined;
