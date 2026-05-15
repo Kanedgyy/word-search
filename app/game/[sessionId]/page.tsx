@@ -569,25 +569,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         </div>
 
         {/* Баннер реванша */}
-        {isGameFinished && (
+        {isGameFinished && gameState?.rematchSessionId && (
           <div className="mb-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/50 text-emerald-200 px-8 py-5 rounded-2xl text-center animate-fade-in backdrop-blur-sm">
-            <div className="text-xl font-bold mb-3">
-              {gameState?.rematchSessionId ? '🔄 Создан реванш!' : '🎮 Игра окончена!'}
+            <div className="text-xl font-bold mb-3">🔄 Создан реванш!</div>
+            <div className="text-sm mb-3">
+              Хост создал новую игру. ID: <code className="bg-white/10 px-3 py-1 rounded font-mono">{gameState.rematchSessionId}</code>
             </div>
-            {gameState?.rematchSessionId && (
-              <div className="text-sm mb-3">
-                Хост создал новую игру. ID: <code className="bg-white/10 px-3 py-1 rounded font-mono">{gameState.rematchSessionId}</code>
-              </div>
-            )}
             <button
               onClick={() => {
-                console.log('=== КНОПКА НАЖАТА! ===');
+                console.log('=== КНОПКА ПРИСОЕДИНИТЬСЯ НАЖАТА ===');
                 handleJoinRematch();
               }}
               disabled={rematchMutation.isPending}
               className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50"
             >
-              {rematchMutation.isPending ? '⏳ Создание...' : '🚀 Присоединиться'}
+              🚀 Присоединиться
             </button>
           </div>
         )}
