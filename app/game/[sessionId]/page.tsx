@@ -243,49 +243,70 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: async (data) => {
-      console.log('[rematch] Реванш создан:', data.sessionId);
+      console.log('[rematch] onSuccess! ДАННЫЕ:', data);
+      console.log('[rematch] sessionId новой сессии:', data.sessionId);
+      console.log('[rematch] нажимаю refetch...');
       // Принудительно обновляем gameState чтобы rematchSessionId появился
       await refetch();
+      console.log('[rematch] refetch выполнен');
       
       // Хост должен сам присоединиться к новой сессии
       try {
+        console.log('[rematch] Присоединяюсь к новой сессии:', data.sessionId);
         const userId = localStorage.getItem('userId') || undefined;
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: data.sessionId,
           playerName: playerName || 'Игрок',
           userId
         });
+        console.log('[rematch] УСПЕШНО присоединился:', joinData);
         router.push(`/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
       } catch (err: any) {
+        console.error('[rematch] ОШИБКА перехода в реванш:', err);
         setMessage('Ошибка перехода в реванш: ' + err.message);
       }
+    },
+    onError: (err) => {
+      console.error('[rematch] onError:', err);
+      setMessage('Ошибка создания реванша: ' + err.message);
     },
   });
 
   const handleJoinRematch = async () => {
-    console.log('[handleJoinRematch] Called, rematchSessionId:', gameState?.rematchSessionId);
+    console.log('========== [handleJoinRematch] НАЧАЛО ==========' );
+    console.log('[handleJoinRematch] gameState:', gameState);
+    console.log('[handleJoinRematch] gameState?.rematchSessionId:', gameState?.rematchSessionId);
+    console.log('[handleJoinRematch] gameState?.status:', gameState?.status);
+    console.log('[handleJoinRematch] sessionId:', sessionId);
+    console.log('[handleJoinRematch] playerId:', playerId);
     
     // Если rematchSessionId есть - присоединяемся к нему
     if (gameState?.rematchSessionId) {
-      console.log('[handleJoinRematch] Присоединяюсь к реваншу:', gameState.rematchSessionId);
+      console.log('[handleJoinRematch] РЕВАНШ ЕСТЬ! Присоединяюсь к:', gameState.rematchSessionId);
       console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
       try {
         const userId = localStorage.getItem('userId') || undefined;
+        console.log('[handleJoinRematch] userId из localStorage:', userId);
+        console.log('[handleJoinRematch] playerName:', playerName);
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: gameState.rematchSessionId,
           playerName: playerName || 'Игрок',
           userId
         });
+        console.log('[handleJoinRematch] УСПЕШНО присоединился:', joinData);
         router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
       } catch (err: any) {
+        console.error('[handleJoinRematch] ОШИБКА присоединения:', err);
         setMessage('Ошибка присоединения к реваншу: ' + err.message);
       }
+      console.log('========== [handleJoinRematch] КОНЕЦ (присоединение) ==========' );
       return;
     }
     
     // Если rematchSessionId нет - создаём реванш
-    console.log('[handleJoinRematch] Создаю реванш...');
+    console.log('[handleJoinRematch] НЕТ реванша, СОЗДАЮ...');
     rematchMutation.mutate({ sessionId, playerId });
+    console.log('========== [handleJoinRematch] КОНЕЦ (создание) ==========' );
   };
 
   // Удаление игрока
@@ -570,7 +591,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               </div>
             )}
             <button
-              onClick={handleJoinRematch}
+              onClick={() => {
+                console.log('=== КНОПКА НАЖАТА! ===');
+                handleJoinRematch();
+              }}
               disabled={rematchMutation.isPending}
               className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50"
             >
