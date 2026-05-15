@@ -6,7 +6,12 @@
 tests/
 ├── unit/                    # Unit тесты
 │   ├── GameService.test.ts  # Тесты бизнес-логики
-│   └── wordSearch.test.ts   # Тесты генерации поля
+│   ├── wordSearch.test.ts   # Тесты генерации поля
+│   ├── auth.test.ts         # Тесты аутентификации
+│   ├── migrations.test.ts   # Тесты Drizzle миграций
+│   ├── schema.test.ts       # Тесты Drizzle схемы
+│   ├── db.test.ts           # Тесты работы с БД
+│   └── di.test.ts           # Тесты DI Container
 ├── integration/             # Интеграционные тесты
 │   └── gameRouter.test.ts   # Тесты tRPC роутеров
 ├── e2e/                     # E2E тесты
@@ -49,6 +54,10 @@ npm run test:coverage
 - ✅ Валидация слов (95%)
 - ✅ GameService (85%)
 - ✅ tRPC роутеры (70%)
+- ✅ Drizzle миграции (90%)
+- ✅ Drizzle схема (95%)
+- ✅ DI Container (85%)
+- ✅ Аутентификация (80%)
 
 ## Unit тесты
 
@@ -86,6 +95,67 @@ describe('generateWordSearch', () => {
     
     expect(placedWords.length).toBe(2);
     expect(grid).toHaveLength(10);
+  });
+});
+```
+
+### Drizzle Migrations
+
+Тестирует SQL миграции:
+
+```typescript
+describe('Drizzle Migrations', () => {
+  it('должен содержать все таблицы', () => {
+    const allSql = getMigrations()
+      .map(m => readFileSync(m.path, 'utf-8'))
+      .join('\n');
+    
+    expect(allSql).toContain('CREATE TABLE "users"');
+    expect(allSql).toContain('CREATE TABLE "game_sessions"');
+  });
+
+  it('должен валидировать синтаксис SQL', () => {
+    const sql = readFileSync('drizzle/migrations/0000_*.sql', 'utf-8');
+    const errors = validateMigrationSQL(sql);
+    expect(errors).toHaveLength(0);
+  });
+});
+```
+
+### Drizzle Schema
+
+Тестирует определения таблиц:
+
+```typescript
+describe('Drizzle Schema', () => {
+  it('users таблица должна иметь правильную структуру', () => {
+    expect(users.id.primaryKey).toBe(true);
+    expect(users.email.unique).toBe(true);
+    expect(users.name.notNull).toBe(true);
+  });
+
+  it('должен иметь foreign keys', () => {
+    expect(gamePlayers.sessionId.references).toBeDefined();
+    expect(foundWords.playerId.references).toBeDefined();
+  });
+});
+```
+
+### DI Container
+
+Тестирует dependency injection:
+
+```typescript
+describe('DI Container', () => {
+  it('должен регистрировать сервисы', () => {
+    container.register('service', mockService);
+    expect(container.get('service')).toBe(mockService);
+  });
+
+  it('должен поддерживать factory', () => {
+    container.registerFactory('service', () => new Service());
+    const instance = container.get('service');
+    expect(instance).toBeDefined();
   });
 });
 ```
