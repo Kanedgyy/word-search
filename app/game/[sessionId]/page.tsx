@@ -243,26 +243,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: async (data) => {
-      console.log('[rematch] onSuccess! ДАННЫЕ:', data);
-      console.log('[rematch] sessionId новой сессии:', data.sessionId);
-      console.log('[rematch] нажимаю refetch...');
-      // Принудительно обновляем gameState чтобы rematchSessionId появился
-      await refetch();
-      console.log('[rematch] refetch выполнен');
+      console.log('[rematch] onSuccess! sessionId:', data.sessionId);
       
       // Хост должен сам присоединиться к новой сессии
       try {
-        console.log('[rematch] Присоединяюсь к новой сессии:', data.sessionId);
         const userId = localStorage.getItem('userId') || undefined;
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: data.sessionId,
           playerName: playerName || 'Игрок',
           userId
         });
-        console.log('[rematch] УСПЕШНО присоединился:', joinData);
-        router.push(`/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
+        console.log('[rematch] УСПЕШНО присоединился, переходим...');
+        // Используем window.location для надежного перехода
+        window.location.href = `/game/${data.sessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`;
       } catch (err: any) {
-        console.error('[rematch] ОШИБКА перехода в реванш:', err);
+        console.error('[rematch] ОШИБКА:', err);
         setMessage('Ошибка перехода в реванш: ' + err.message);
       }
     },
@@ -274,29 +269,23 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
 
   const handleJoinRematch = async () => {
     console.log('========== [handleJoinRematch] НАЧАЛО ==========' );
-    console.log('[handleJoinRematch] gameState:', gameState);
     console.log('[handleJoinRematch] gameState?.rematchSessionId:', gameState?.rematchSessionId);
-    console.log('[handleJoinRematch] gameState?.status:', gameState?.status);
-    console.log('[handleJoinRematch] sessionId:', sessionId);
-    console.log('[handleJoinRematch] playerId:', playerId);
     
     // Если rematchSessionId есть - присоединяемся к нему
     if (gameState?.rematchSessionId) {
       console.log('[handleJoinRematch] РЕВАНШ ЕСТЬ! Присоединяюсь к:', gameState.rematchSessionId);
-      console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
       try {
         const userId = localStorage.getItem('userId') || undefined;
-        console.log('[handleJoinRematch] userId из localStorage:', userId);
-        console.log('[handleJoinRematch] playerName:', playerName);
         const joinData = await joinSessionMutation.mutateAsync({
           sessionId: gameState.rematchSessionId,
           playerName: playerName || 'Игрок',
           userId
         });
-        console.log('[handleJoinRematch] УСПЕШНО присоединился:', joinData);
-        router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
+        console.log('[handleJoinRematch] УСПЕШНО присоединился, переходим...');
+        // Используем window.location для надежного перехода
+        window.location.href = `/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`;
       } catch (err: any) {
-        console.error('[handleJoinRematch] ОШИБКА присоединения:', err);
+        console.error('[handleJoinRematch] ОШИБКА:', err);
         setMessage('Ошибка присоединения к реваншу: ' + err.message);
       }
       console.log('========== [handleJoinRematch] КОНЕЦ (присоединение) ==========' );
