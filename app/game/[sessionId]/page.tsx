@@ -261,7 +261,13 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
 
   const handleJoinRematch = async () => {
-    if (!gameState?.rematchSessionId) return;
+    // Если rematchSessionId ещё нет - хост должен создать реванш
+    if (!gameState?.rematchSessionId) {
+      console.log('[handleJoinRematch] Создаю реванш...');
+      rematchMutation.mutate({ sessionId, playerId });
+      return;
+    }
+    
     console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
     try {
       const userId = localStorage.getItem('userId') || undefined;
@@ -808,23 +814,21 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
               </div>
 
               <div className="mt-8 text-center flex flex-wrap gap-4 justify-center relative z-50">
-                {!gameState.rematchSessionId && (
-                  <button
-                    onClick={() => {
-                      console.log('Клик Реванш! sessionId:', sessionId, 'playerId:', playerId);
-                      handleJoinRematch();
-                    }}
-                    disabled={rematchMutation.isPending}
-                    style={{ 
-                      position: 'relative', 
-                      zIndex: 60,
-                      pointerEvents: 'auto',
-                    }}
-                    className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    console.log('Клик Реванш! sessionId:', sessionId, 'playerId:', playerId);
+                    handleJoinRematch();
+                  }}
+                  disabled={rematchMutation.isPending}
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 60,
+                    pointerEvents: 'auto',
+                  }}
+                  className="px-10 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {rematchMutation.isPending ? '⏳' : '🔄'} Реванш!
+                </button>
                 <button
                   onClick={() => {
                     console.log('Клик Главная! Переход на /');
