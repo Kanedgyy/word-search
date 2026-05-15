@@ -3,6 +3,8 @@
  * 
  * Филворд — слова размещаются змейкой (с изгибами под 90°),
  * не пересекаются, поле 10×10 полностью заполнено.
+ * 
+ * @module word-search
  */
 
 export type Direction = 'horizontal' | 'vertical' | 'diagonal_down' | 'diagonal_up';
@@ -178,7 +180,20 @@ function tryPlaceSnake(
 }
 
 /**
- * Генерирует классический филворд
+ * Генерирует классический филворд с заданным списком слов
+ * 
+ * Размещает слова змейкой (максимум 1 поворот под 90°),
+ * заполняет пустые клетки случайными буквами.
+ * 
+ * @param words - Список слов для размещения
+ * @returns Объект с grid, размещёнными словами, неудачными и путями
+ * 
+ * @example
+ * ```typescript
+ * const { grid, placedWords } = generateWordSearch(['ТЕСТ', 'ИГРА', 'КОД']);
+ * console.log(grid); // 10x10 массив букв
+ * console.log(placedWords); // ['ТЕСТ', 'ИГРА']
+ * ```
  */
 export function generateWordSearch(words: string[]): {
   grid: Grid;
@@ -218,6 +233,18 @@ export function generateWordSearch(words: string[]): {
 
 /**
  * Проверяет слово по пути координат
+ * 
+ * Валидирует:
+ * - Длина слова >= 3
+ * - Слово есть в списке допустимых
+ * - Путь корректный (соседние клетки по стороне)
+ * - Буквы на поле совпадают со словом
+ * 
+ * @param word - Слово для проверки
+ * @param validWords - Список допустимых слов
+ * @param grid - Игровое поле
+ * @param path - Путь координат выделения
+ * @returns Результат валидации с ошибкой если невалидно
  */
 export function validateWordByPath(
   word: string,
@@ -267,7 +294,10 @@ export function validateWordByPath(
 }
 
 /**
- * Получает случайный набор слов
+ * Получает случайный набор слов из общего словаря
+ * 
+ * @param count - Количество слов (по умолчанию 12)
+ * @returns Массив случайных слов
  */
 export function getRandomWordSubset(count: number = 12): string[] {
   const shuffled = [...COMMON_WORDS].sort(() => Math.random() - 0.5);
@@ -325,7 +355,14 @@ export function directionToText(direction: Direction): string {
 }
 
 /**
- * Извлекает слово из поля по координатам
+ * Извлекает слово из поля по координатам (прямая линия)
+ * 
+ * @param grid - Игровое поле
+ * @param startRow - Начальная строка
+ * @param startCol - Начальный столбец
+ * @param endRow - Конечная строка
+ * @param endCol - Конечный столбец
+ * @returns Слово извлечённое с поля
  */
 export function extractWordFromGrid(
   grid: Grid,
@@ -360,7 +397,13 @@ export function extractWordFromGrid(
 }
 
 /**
- * Определяет направление по координатам
+ * Определяет направление по координатам начала и конца
+ * 
+ * @param startRow - Начальная строка
+ * @param startCol - Начальный столбец
+ * @param endRow - Конечная строка
+ * @param endCol - Конечный столбец
+ * @returns Направление или null если не прямая линия
  */
 export function getDirection(
   startRow: number,
@@ -381,6 +424,12 @@ export function getDirection(
 
 /**
  * Генерирует полный путь между двумя точками
+ * 
+ * @param startRow - Начальная строка
+ * @param startCol - Начальный столбец
+ * @param endRow - Конечная строка
+ * @param endCol - Конечный столбец
+ * @returns Массив координат от начала до конца
  */
 export function generatePath(
   startRow: number,
@@ -410,6 +459,22 @@ export function generatePath(
 
 /**
  * Усиленная валидация слова с проверкой всех параметров
+ * 
+ * Проверяет:
+ * - Длина слова >= 3
+ * - Координаты в границах поля
+ * - Слово можно извлечь из поля
+ * - Слово есть в списке допустимых
+ * 
+ * @param word - Слово для проверки
+ * @param startRow - Начальная строка
+ * @param startCol - Начальный столбец
+ * @param endRow - Конечная строка
+ * @param endCol - Конечный столбец
+ * @param direction - Наделение выделения
+ * @param validWords - Список допустимых слов
+ * @param grid - Игровое поле
+ * @returns Результат валидации
  */
 export function validateWordWithCoordinates(
   word: string,

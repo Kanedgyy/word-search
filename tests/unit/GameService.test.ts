@@ -1,5 +1,17 @@
 /**
- * Unit tests для GameService
+ * Unit тесты для GameService
+ * 
+ * Покрытие тестами:
+ * - createSession: валидация параметров, создание сессии
+ * - joinSession: присоединение, проверка сессии, максимум игроков
+ * - startGame: запуск игры, проверка хоста, минимум игроков
+ * - submitWord: отправка слова, валидация, подсчёт очков
+ * - finishGame: завершение игры, сохранение статистики
+ * 
+ * @example
+ * ```bash
+ * npm run test:vitest tests/unit/GameService.test.ts
+ * ```
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -466,6 +478,142 @@ describe('GameService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Это слово уже найдено');
+    });
+
+    it('должен корректно считать очки игрока', async () => {
+      const mockSession: GameSession = {
+        id: 'session-123',
+        grid: [],
+        wordList: ['ТЕСТ', 'ИГРА'],
+        status: 'in_progress',
+        gameMode: 'individual',
+        onTimeLimit: false,
+        maxPlayers: 6,
+        duration: 300,
+        createdAt: new Date(),
+        endsAt: new Date(),
+        rematchSessionId: null,
+        hostUserId: null,
+      };
+
+      const mockPlayer: Player = {
+        id: 'player-1',
+        name: 'Игрок1',
+        isBot: false,
+        color: '#FF006E',
+        wordsFound: 1,
+        firstWordTime: 10,
+        team: null,
+        turnOrder: 0,
+        status: 'joined',
+        userId: 'user-123',
+      };
+
+      const mockFoundWords = [
+        { id: 'word-1', sessionId: 'session-123', playerId: 'player-1', word: 'ТЕСТ', startRow: 0, startCol: 0, endRow: 0, endCol: 3, direction: 'horizontal' as const, path: [], foundAt: new Date() },
+        { id: 'word-2', sessionId: 'session-123', playerId: 'player-2', word: 'ИГРА', startRow: 1, startCol: 1, endRow: 1, endCol: 4, direction: 'horizontal' as const, path: [], foundAt: new Date() },
+      ];
+
+      vi.mocked(mockRepository.getSession).mockResolvedValue(mockSession);
+      vi.mocked(mockRepository.wordExists).mockResolvedValue(false);
+      vi.mocked(mockRepository.updatePlayer).mockResolvedValue(mockPlayer);
+      vi.mocked(mockRepository.getPlayersBySession).mockResolvedValue([mockPlayer]);
+      vi.mocked(mockRepository.getFoundWordsBySession).mockResolvedValue(mockFoundWords);
+
+      const result = await gameService.submitWord({
+        sessionId: 'session-123',
+        playerId: 'player-1',
+        word: 'тест',
+        startRow: 0,
+        startCol: 0,
+        endRow: 0,
+        endCol: 3,
+        direction: 'horizontal',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.results).toBeDefined();
+      expect(result.results?.[0].wordsFound).toBe(1);
+    });
+  });
+
+  describe('finishGame', () => {
+    it('должен завершить игру и сохранить статистику', async () => {
+      const mockSession: GameSession = {
+        id: 'session-123',
+        grid: [],
+        wordList: ['ТЕСТ', 'ИГРА'],
+        status: 'in_progress',
+        gameMode: 'individual',
+        onTimeLimit: false,
+        maxPlayers: 6,
+        duration: 300,
+        createdAt: new Date(),
+        endsAt: new Date(),
+        rematchSessionId: null,
+        hostUserId: null,
+      };
+
+      const mockPlayers: Player[] = [
+        {
+          id: 'player-1',
+          name: 'Игрок1',
+          isBot: false,
+          color: '#FF006E',
+          wordsFound: 2,
+          firstWordTime: 10,
+          team: null,
+          turnOrder: 0,
+          status: 'joined',
+          userId: 'user-123',
+        },
+      ];
+
+      const mockFoundWords = [
+        { id: 'word-1', sessionId: 'session-123', playerId: 'player-1', word: 'ТЕСТ', startRow: 0, startCol: 0, endRow: 0, endCol: 3, direction: 'horizontal' as const, path: [], foundAt: new Date() },
+        { id: 'word-2', sessionId: 'session-123', playerId: 'player-1', word: 'ИГРА', startRow: 1, startCol: 1, endRow: 1, endCol: 4, direction: 'horizontal' as const, path: [], foundAt: new Date() },
+      ];
+
+      vi.mocked(mockRepository.getSession).mockResolvedValue(mockSession);
+      vi.mocked(mockRepository.updateSession).mockResolvedValue({ ...mockSession, status: 'finished' });
+      vi.mocked(mockRepository.getPlayersBySession).mockResolvedValue(mockPlayers);
+      vi.mocked(mockRepository.getFoundWordsBySession).mockResolvedValue(mockFoundWords);
+
+      await gameService.finishGame('session-123');
+
+      expect(mockRepository.updateSession).toHaveBeenCalledWith('session-123', { status: 'finished' });
+      expect(mockRepository.recordMatchHistory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: 'session-123',
+          playerName: 'Игрок1',
+          wordsFound: 2,
+          rank: 1,
+        })
+      );
+    });
+
+    it('не должен сохранять статистику если игра уже завершена', async () => {
+      const mockSession: GameSession = {
+        id: 'session-123',
+        grid: [],
+        wordList: [],
+        status: 'finished',
+        gameMode: 'individual',
+        onTimeLimit: false,
+        maxPlayers: 6,
+        duration: 300,
+        createdAt: new Date(),
+        endsAt: new Date(),
+        rematchSessionId: null,
+        hostUserId: null,
+      };
+
+      vi.mocked(mockRepository.getSession).mockResolvedValue(mockSession);
+
+      await gameService.finishGame('session-123');
+
+      expect(mockRepository.updateSession).not.toHaveBeenCalled();
+      expect(mockRepository.recordMatchHistory).not.toHaveBeenCalled();
     });
   });
 });

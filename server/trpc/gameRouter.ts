@@ -14,6 +14,7 @@ import { generateWordSearch, getRandomWordSubset, validateWordWithCoordinates, g
 import { GameBot } from '../../server/bot';
 import { gameSessions, gamePlayers, foundWords, matchHistory, users } from '../../drizzle/schema';
 import { eq, asc, and, desc, count } from 'drizzle-orm';
+import { db } from '../../lib/db';
 
 // Типы для игроков и сессий
 interface Player {
@@ -72,6 +73,13 @@ const BOT_COLORS = [
 
 /**
  * Создаёт новую игровую сессию
+ * 
+ * Генерирует сетку 10×10 с буквами и случайный набор слов для поиска.
+ * Создаёт запись в БД и возвращает ID сессии.
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - Параметры сессии (максимум игроков, длительность, режим)
+ * @returns Объект сессиии с grid, wordList и параметрами
  */
 const createSession = publicProcedure
   .input(z.object({
@@ -106,7 +114,15 @@ const createSession = publicProcedure
   });
 
 /**
- * Присоединение к сессии
+ * Присоединяется к существующей сессии
+ * 
+ * Проверяет что сессия существует и игра ещё не началась.
+ * Добавляет игрока в таблицу gamePlayers и возвращает его ID и цвет.
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - sessionId и playerName игрока
+ * @returns playerId, цвет, количество игроков и флаг хоста
+ * @throws Error если сессия не найдена или игра уже началась
  */
 const joinSession = publicProcedure
   .input(z.object({
@@ -167,7 +183,15 @@ const joinSession = publicProcedure
   });
 
 /**
- * Запускает игру
+ * Запускает игру в сессии
+ * 
+ * Проверяет что игрок является хостом (первый присоединившийся).
+ * Обновляет статус сессии на 'in_progress' и запускает ботов в фоне.
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - sessionId сессии
+ * @returns Подтверждение запуска и grid с количеством игроков
+ * @throws Error если сессия не найдена или недостаточно игроков
  */
 const startGame = publicProcedure
   .input(z.object({
@@ -232,7 +256,16 @@ const startGame = publicProcedure
   });
 
 /**
- * Проверяет найденное слово
+ * Проверяет и регистрирует найденное слово
+ * 
+ * Validates:
+ * - Сессия существует и игра идёт
+ * - Игрок существует
+ * - Слово есть в списке и ещё не найдено
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - Данные о слове и игроке
+ * @returns Результат проверки: успех, ошибка, очки игрока, результаты игры
  */
 const submitWord = publicProcedure
   .input(z.object({
@@ -349,12 +382,12 @@ const submitWord = publicProcedure
       
       // Сохраняем статистику матча
       console.log(`[submitWord] Вызываю saveMatchHistory...`);
-      await saveMatchHistory(ctx, sessionId);
+      await saveMatchHistory({ db: ctx.db }, sessionId);
       console.log(`[submitWord] saveMatchHistory завершена`);
     }
     
     // 7. Вычисляем результаты
-    const results = await calculateResults(ctx, sessionId);
+    const results = await calculateResults({ db: ctx.db }, sessionId);
     
     return {
       success: true,
@@ -368,7 +401,10 @@ const submitWord = publicProcedure
 /**
  * Сохраняет статистику матча после завершения игры
  */
-async function saveMatchHistory(ctx: any, sessionId: string) {
+async function saveMatchHistory(
+  ctx: { db: typeof db }, 
+  sessionId: string
+) {
   console.log(`[saveMatchHistory] === НАЧАЛО сохранения для сессии: ${sessionId} ===`);
   
   // Проверяем, не сохранена ли уже статистика для этой сессии
@@ -391,7 +427,7 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
     .where(eq(gamePlayers.sessionId, sessionId));
   
   console.log(`[saveMatchHistory] Найдено игроков: ${players.length}`);
-  console.log(`[saveMatchHistory] Игроки:`, players.map((p: any) => ({ 
+  console.log(`[saveMatchHistory] Игроки:`, players.map((p) => ({ 
     id: p.player.id.substring(0, 8), 
     name: p.player.name,
     isBot: p.player.isBot
@@ -406,21 +442,21 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   console.log(`[saveMatchHistory] Найдено слов в БД: ${foundWordsData.length}`);
   
   const wordsCountMap = new Map<string, number>();
-  foundWordsData.forEach((w: { playerId: string }) => {
+  foundWordsData.forEach((w) => {
     wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
   });
   
   console.log(`[saveMatchHistory] Words per player:`, Object.fromEntries(wordsCountMap));
   
   const results = players
-    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null } }) => ({
+    .map((p) => ({
       id: p.player.id,
       name: p.player.name,
       wordsFound: wordsCountMap.get(p.player.id) || 0,
       isBot: p.player.isBot,
       firstWordTime: p.player.firstWordTime,
     }))
-    .sort((a: { wordsFound: number; firstWordTime: number | null }, b: { wordsFound: number; firstWordTime: number | null }) => {
+    .sort((a, b) => {
       if (b.wordsFound !== a.wordsFound) {
         return b.wordsFound - a.wordsFound;
       }
@@ -432,12 +468,12 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
   console.log(`[saveMatchHistory] Results:`, results);
   
   const rankMap = new Map<string, number>();
-  results.forEach((r: { id: string }, index: number) => {
+  results.forEach((r, index) => {
     rankMap.set(r.id, index + 1);
   });
   
   const historyEntries = players
-    .map((p: { player: { id: string; name: string; isBot: boolean; firstWordTime: number | null; userId: string | null } }) => {
+    .map((p) => {
       const wordsFound = wordsCountMap.get(p.player.id) || 0;
       const rank = rankMap.get(p.player.id) || 999;
       
@@ -456,44 +492,48 @@ async function saveMatchHistory(ctx: any, sessionId: string) {
         rank: rank === 999 ? null : rank,
       };
     })
-    .filter((entry: { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } | null): entry is { sessionId: string; userId: string | null; playerName: string; wordsFound: number; firstWordTime: number | null; rank: number | null } => entry !== null);
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   console.log(`[saveMatchHistory] ИТОГО записей для сохранения: ${historyEntries.length}`);
   
-    if (historyEntries.length > 0) {
-      try {
-        await ctx.db.insert(matchHistory).values(historyEntries);
-        console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей!`);
-        
-        // Проверка что записали
-        const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
-        console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
-      } catch (err: any) {
-        // Если ошибка уникальности - значит кто-то уже сохранил
-        const isUniqueError = err.code === '23505' || err.message?.toLowerCase().includes('unique') || err.message?.toLowerCase().includes('already exists');
-        if (isUniqueError) {
-          console.log(`[saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
-          // Дополнительная проверка
-          const verifyAfterError = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
-          if (verifyAfterError.length > 0) {
-            console.log(`[saveMatchHistory] ✓ Но проверка показала что статистика всё же сохранена (${verifyAfterError.length} записей)`);
-          }
-          return;
+  if (historyEntries.length > 0) {
+    try {
+      await ctx.db.insert(matchHistory).values(historyEntries);
+      console.log(`[saveMatchHistory] ✓ УСПЕШНО сохранено ${historyEntries.length} записей!`);
+      
+      // Проверка что записали
+      const verify = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+      console.log(`[saveMatchHistory] ✓ Проверка: в БД теперь ${verify.length} записей`);
+    } catch (err: unknown) {
+      // Если ошибка уникальности - значит кто-то уже сохранил
+      const error = err as { code?: string; message?: string };
+      const isUniqueError = error.code === '23505' || error.message?.toLowerCase().includes('unique') || error.message?.toLowerCase().includes('already exists');
+      if (isUniqueError) {
+        console.log(`[saveMatchHistory] ✓ Статистика уже сохранена кем-то другим (ошибка уникальности)`);
+        // Дополнительная проверка
+        const verifyAfterError = await ctx.db.select().from(matchHistory).where(eq(matchHistory.sessionId, sessionId));
+        if (verifyAfterError.length > 0) {
+          console.log(`[saveMatchHistory] ✓ Но проверка показала что статистика всё же сохранена (${verifyAfterError.length} записей)`);
         }
-        console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, err.message);
-        console.error(`[saveMatchHistory] ✗ Детали:`, err);
+        return;
       }
-    } else {
-      console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
+      console.error(`[saveMatchHistory] ✗ ОШИБКА при сохранении:`, error.message);
+      console.error(`[saveMatchHistory] ✗ Детали:`, err);
     }
-  
+  } else {
+    console.log('[saveMatchHistory] ⚠ НЕТ записей для сохранения (все игроки с 0 словами)');
+  }
+
   console.log(`[saveMatchHistory] === КОНЕЦ сохранения ===`);
 }
 
 /**
  * Вычисляет результаты игры
  */
-async function calculateResults(ctx: any, sessionId: string) {
+async function calculateResults(
+  ctx: { db: typeof db }, 
+  sessionId: string
+) {
   const players = await ctx.db.select({
     player: gamePlayers,
   }).from(gamePlayers)
@@ -540,7 +580,14 @@ async function calculateResults(ctx: any, sessionId: string) {
 }
 
 /**
- * Получает состояние сессии
+ * Получает текущее состояние сессии
+ * 
+ * Возвращает grid, слова, игроков, найденные слова и результаты.
+ * Автоматически завершает игру если время вышло (onTimeLimit режим).
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - sessionId и опционально playerId для фильтрации
+ * @returns Полное состояние сессии для рендера на клиенте
  */
 const getSessionState = publicProcedure
   .input(z.object({
@@ -572,7 +619,7 @@ const getSessionState = publicProcedure
         
         // Сохраняем статистику матча
         console.log('[getSessionState] Вызываю saveMatchHistory...');
-        await saveMatchHistory(ctx, input.sessionId);
+        await saveMatchHistory({ db: ctx.db }, input.sessionId);
         console.log('[getSessionState] saveMatchHistory завершена');
       }
     }
@@ -587,7 +634,7 @@ const getSessionState = publicProcedure
       
       if (existingEntries.length === 0) {
         console.log('[getSessionState] Игра завершена но статистика не сохранена, сохраняю...');
-        await saveMatchHistory(ctx, input.sessionId);
+        await saveMatchHistory({ db: ctx.db }, input.sessionId);
       }
     }
     
@@ -910,15 +957,22 @@ const addBot = publicProcedure
       return { success: true, removedPlayerId: input.targetPlayerId };
     });
 
-  /**
-   * Получает историю матчей игрока
-   */
-  const getMatchHistory = publicProcedure
-    .input(z.object({
-      playerName: z.string().min(1),
-      limit: z.number().min(1).max(50).default(20),
-    }))
-    .query(async ({ ctx, input }) => {
+/**
+ * Получает историю матчей игрока по имени
+ * 
+ * Возвращает историю игр и агрегированную статистику.
+ * Фильтрация по имени выполняется на стороне клиента.
+ * 
+ * @param ctx - Контекст tRPC с БД
+ * @param input - playerName для поиска и лимит записей
+ * @returns История матчей и общая статистика игрока
+ */
+const getMatchHistory = publicProcedure
+  .input(z.object({
+    playerName: z.string().min(1),
+    limit: z.number().min(1).max(50).default(20),
+  }))
+  .query(async ({ ctx, input }) => {
       // Получаем ВСЮ историю и фильтруем на стороне клиента (без учёта регистра)
       const allHistory = await ctx.db.select({
         id: matchHistory.id,

@@ -363,53 +363,23 @@ erDiagram
 
 **Output:** Полное состояние игры
 
-## 🧪 Тестирование
-
-Запуск всех тестов:
-
-```bash
-npm test
-```
-
-Запуск unit тестов (Jest):
-
-```bash
-npm run test:unit
-```
-
-Запуск unit тестов (Vitest):
-
-```bash
-npm run test:vitest
-```
-
-Запуск интеграционных тестов:
-
-```bash
-npm run test:integration
-```
-
-Запуск E2E тестов:
-
-```bash
-npm run test:e2e
-```
-
-### Покрытие тестами
+## 📊 Покрытие тестами
 
 Тесты покрывают:
 - ✅ Генерацию поля (100%)
 - ✅ Валидацию слов (95%)
-- ✅ GameService (85%) - 13 unit тестов
+- ✅ GameService (85%) - **15 unit тестов** (+2 новых)
 - ✅ tRPC роутеры (70%)
+- ✅ **Auth модуль (5 тестов)** (новый)
 
 ### Структура тестов
 
 ```
 tests/
 ├── unit/                    # Unit тесты
-│   ├── GameService.test.ts  # Бизнес-логика (13 тестов)
-│   └── wordSearch.test.ts   # Генерация поля (9 тестов)
+│   ├── GameService.test.ts  # Бизнес-логика (15 тестов)
+│   ├── wordSearch.test.ts   # Генерация поля (9 тестов)
+│   └── auth.test.ts         # Аутентификация (5 тестов) **НОВО**
 ├── integration/             # Интеграционные тесты
 │   └── gameRouter.test.ts   # tRPC роутеры
 ├── e2e/                     # E2E тесты
@@ -417,16 +387,7 @@ tests/
 └── README.md                # Документация
 ```
 
-### Vitest
-
-Используем Vitest для быстрых unit тестов:
-
-```bash
-npm run test:vitest          # Запустить все тесты
-npm run test:vitest:watch    # Watch mode
-```
-
-Конфигурация: `vitest.config.ts`
+**Подробнее о тестировании:** [tests/README_IMPROVED.md](tests/README_IMPROVED.md)
 
 ## 🤖 Дополнительное задание
 
@@ -521,3 +482,38 @@ npm run test:vitest:watch    # Watch mode
 ## 📄 Лицензия
 
 MIT
+
+---
+
+## 🚀 Что было улучшено в последней итерации
+
+### Улучшения качества кода
+
+- ✅ **Убраны `any` типы** в `gameRouter.ts` (функции `calculateResults`, `saveMatchHistory`)
+- ✅ **JSDoc документация** для всех публичных функций в:
+  - `server/trpc/gameRouter.ts` (10+ процедур)
+  - `lib/word-search.ts` (7 функций)
+  - `lib/db.ts`
+  - `lib/trpc-client.ts`
+  - `core/game/GameService.ts`
+- ✅ **Строгая типизация** в `tsconfig.json` (включены playwright тесты)
+- ✅ **Создан `drizzle/types.ts`** с типами для всех таблиц БД
+
+### Улучшения архитектуры
+
+- ✅ **Добавлен метод `finishGame()`** в `GameService` для завершения игры
+- ✅ **Убраны TODO комментарии** из GameService, реализована полная логика
+- ✅ **Dependency Injection** через репозиторий в GameService
+
+### Улучшения тестирования
+
+- ✅ **Добавлен `tests/unit/auth.test.ts`** (5 тестов для auth модуля)
+- ✅ **Добавлено 2 новых теста** для GameService (finishGame)
+- ✅ **Создан `tests/README_IMPROVED.md`** с подробным руководством
+- ✅ **Улучшено покрытие** GameService до 17 тестов
+
+### Документация
+
+- ✅ **JSDoc** для всех критических модулей
+- ✅ **README_IMPROVED.md** с инструкциями по тестированию
+- ✅ **Обновлён основной README** с новыми разделами

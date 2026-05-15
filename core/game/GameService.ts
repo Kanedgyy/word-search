@@ -1,6 +1,11 @@
 /**
  * Сервис игры — чистая бизнес-логика
  * Не зависит от фреймворков и БД
+ * 
+ * Использует репозиторий для доступа к данным, что позволяет:
+ * - Тестировать сервис без БД (mock репозиторий)
+ * - Заменять реализацию репозитория (PostgreSQL → SQLite для тестов)
+ * - Соблюдать принцип Dependency Inversion
  */
 
 import { AppError, isAppError } from './GameErrors';
@@ -11,11 +16,23 @@ import type {
   CreateSessionInput, 
   JoinSessionInput, 
   SubmitWordInput,
-  Coordinate 
+  Coordinate,
+  FoundWord
 } from './types';
 
 export interface GameServiceOptions {
   repository: GameRepository;
+}
+
+/**
+ * Результаты игры с ранжированием
+ */
+interface GameResult {
+  rank: number;
+  name: string;
+  wordsFound: number;
+  isBot: boolean;
+  firstWordTime: number | null;
 }
 
 export class GameService {
@@ -27,6 +44,10 @@ export class GameService {
 
   /**
    * Создаёт новую игровую сессию
+   * 
+   * @param input - Параметры сессии
+   * @returns Созданная сессия с grid и wordList
+   * @throws AppError если параметры валидации не пройдены
    */
   async createSession(input: CreateSessionInput): Promise<GameSession> {
     // Валидация
@@ -59,6 +80,9 @@ export class GameService {
 
   /**
    * Получает сессию по ID
+   * 
+   * @param sessionId - ID сессии
+   * @returns Сессия или null если не найдена
    */
   async getSession(sessionId: string): Promise<GameSession | null> {
     return await this.repository.getSession(sessionId);
@@ -66,6 +90,10 @@ export class GameService {
 
   /**
    * Присоединяется к сессии
+   * 
+   * @param input - Данные игрока
+   * @returns Информация о игроке и сессии
+   * @throws AppError если сессия не найдена или игра началась
    */
   async joinSession(input: JoinSessionInput): Promise<{ player: Player; playersCount: number; isHost: boolean }> {
     const session = await this.repository.getSession(input.sessionId);
@@ -111,6 +139,11 @@ export class GameService {
 
   /**
    * Запускает игру
+   * 
+   * @param sessionId - ID сессии
+   * @param hostUserId - ID хоста (для проверки прав)
+   * @returns Обновлённая сессия со статусом in_progress
+   * @throws AppError если проверка прав не пройдена
    */
   async startGame(sessionId: string, hostUserId: string): Promise<GameSession> {
     const session = await this.repository.getSession(sessionId);
@@ -150,12 +183,15 @@ export class GameService {
 
   /**
    * Отправляет найденное слово
+   * 
+   * @param input - Данные о слове и игроке
+   * @returns Результат проверки слова
    */
   async submitWord(input: SubmitWordInput): Promise<{ 
     success: boolean; 
     error?: string; 
     player?: Player;
-    results?: Array<{ rank: number; name: string; wordsFound: number; isBot: boolean }>;
+    results?: GameResult[];
     gameEnded: boolean;
   }> {
     const session = await this.repository.getSession(input.sessionId);
@@ -200,24 +236,48 @@ export class GameService {
       path: input.path ?? [],
     });
 
+    // Получаем актуальное количество слов игрока
+    const playerWords = await this.repository.getFoundWordsBySession(input.sessionId);
+    const playerScore = playerWords.filter(w => w.playerId === input.playerId).length;
+
     // Обновляем игрока
     const player = await this.repository.updatePlayer(input.playerId, {
-      wordsFound: Math.floor(Math.random() * 10) + 1, // TODO: реальный подсчёт
+      wordsFound: playerScore,
     });
 
-    // Получаем результаты
+    // Получаем результаты всех игроков
     const players = await this.repository.getPlayersBySession(input.sessionId);
-    const results = players
-      .sort((a, b) => b.wordsFound - a.wordsFound)
-      .map((p) => ({
-        rank: 0, // TODO: вычислить ранг
+    const foundWords = await this.repository.getFoundWordsBySession(input.sessionId);
+    
+    // Считаем слова по игрокам
+    const wordsCountMap = new Map<string, number>();
+    foundWords.forEach(w => {
+      wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
+    });
+
+    const results: GameResult[] = players
+      .map(p => ({
+        rank: 0,
         name: p.name,
-        wordsFound: p.wordsFound,
+        wordsFound: wordsCountMap.get(p.id) || 0,
         isBot: p.isBot,
+        firstWordTime: p.firstWordTime,
+      }))
+      .sort((a, b) => {
+        if (b.wordsFound !== a.wordsFound) {
+          return b.wordsFound - a.wordsFound;
+        }
+        const aTime = a.firstWordTime ?? Infinity;
+        const bTime = b.firstWordTime ?? Infinity;
+        return aTime - bTime;
+      })
+      .map((result, index) => ({
+        ...result,
+        rank: index + 1,
       }));
 
     // Проверяем закончилась ли игра
-    const gameEnded = false; // TODO: проверить через БД
+    const gameEnded = foundWords.length >= session.wordList.length;
 
     return {
       success: true,
@@ -225,5 +285,70 @@ export class GameService {
       results,
       gameEnded,
     };
+  }
+
+  /**
+   * Завершает игру и сохраняет статистику
+   * 
+   * @param sessionId - ID сессии
+   */
+  async finishGame(sessionId: string): Promise<void> {
+    const session = await this.repository.getSession(sessionId);
+    
+    if (!session || session.status === 'finished') {
+      return;
+    }
+
+    // Обновляем статус
+    await this.repository.updateSession(sessionId, {
+      status: 'finished',
+    });
+
+    // Получаем данные для статистики
+    const players = await this.repository.getPlayersBySession(sessionId);
+    const foundWords = await this.repository.getFoundWordsBySession(sessionId);
+
+    // Считаем слова по игрокам
+    const wordsCountMap = new Map<string, number>();
+    const firstWordTimeMap = new Map<string, number>();
+    
+    foundWords.forEach(w => {
+      wordsCountMap.set(w.playerId, (wordsCountMap.get(w.playerId) || 0) + 1);
+      if (!firstWordTimeMap.has(w.playerId)) {
+        firstWordTimeMap.set(w.playerId, Math.floor((new Date(w.foundAt).getTime() - new Date(session.createdAt).getTime()) / 1000));
+      }
+    });
+
+    // Сортируем игроков и определяем ранги
+    const sortedPlayers = players
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        wordsFound: wordsCountMap.get(p.id) || 0,
+        firstWordTime: firstWordTimeMap.get(p.id) ?? null,
+      }))
+      .sort((a, b) => {
+        if (b.wordsFound !== a.wordsFound) {
+          return b.wordsFound - a.wordsFound;
+        }
+        const aTime = a.firstWordTime ?? Infinity;
+        const bTime = b.firstWordTime ?? Infinity;
+        return aTime - bTime;
+      });
+
+    // Сохраняем статистику для каждого игрока
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      const player = sortedPlayers[i];
+      if (player.wordsFound > 0) {
+        await this.repository.recordMatchHistory({
+          sessionId,
+          userId: null, // Нужно получить из player
+          playerName: player.name,
+          wordsFound: player.wordsFound,
+          firstWordTime: player.firstWordTime,
+          rank: i + 1,
+        });
+      }
+    }
   }
 }

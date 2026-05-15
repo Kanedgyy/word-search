@@ -15,22 +15,23 @@ import superjson from 'superjson';
 import { db } from '../../lib/db';
 import { auth } from '../../lib/auth/server';
 import { headers } from 'next/headers';
+import type { Session } from 'better-auth';
 
 // Создаём контекст для tRPC
 // Контекст — это данные, доступные всем router'ам (например, пользователь, БД)
 export interface CreateContextOptions {
   userId?: string;
-  user?: any;
+  user: Record<string, unknown> | null;
   db: typeof db;
 }
 
-export const createInnerTRPCContext = async (opts: CreateContextOptions) => {
+export const createInnerTRPCContext = async (opts: { db: typeof db }) => {
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   
   return {
     userId: session?.user?.id,
-    user: session?.user,
+    user: session?.user ?? null,
     db: opts.db,
   };
 };
