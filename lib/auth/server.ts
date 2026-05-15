@@ -37,22 +37,6 @@ export const auth = betterAuth({
   },
   
   /**
-   * OAuth провайдеры
-   */
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID || "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      enabled: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
-    },
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      enabled: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
-    },
-  },
-  
-  /**
    * Секрет для шифрования сессий
    */
   secret: process.env.BETTER_AUTH_SECRET || "dev-secret-32-chars-minimum-length",
