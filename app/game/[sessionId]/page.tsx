@@ -243,6 +243,10 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
   const rematchMutation = trpc.game.rematch.useMutation({
     onSuccess: async (data) => {
+      console.log('[rematch] Реванш создан:', data.sessionId);
+      // Принудительно обновляем gameState чтобы rematchSessionId появился
+      await refetch();
+      
       // Хост должен сам присоединиться к новой сессии
       try {
         const userId = localStorage.getItem('userId') || undefined;
@@ -259,26 +263,29 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
   });
 
   const handleJoinRematch = async () => {
-    // Если rematchSessionId ещё нет - создаём реванш (только для хоста)
-    if (!gameState?.rematchSessionId) {
-      console.log('[handleJoinRematch] Создаю реванш...');
-      rematchMutation.mutate({ sessionId, playerId });
+    console.log('[handleJoinRematch] Called, rematchSessionId:', gameState?.rematchSessionId);
+    
+    // Если rematchSessionId есть - присоединяемся к нему
+    if (gameState?.rematchSessionId) {
+      console.log('[handleJoinRematch] Присоединяюсь к реваншу:', gameState.rematchSessionId);
+      console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
+      try {
+        const userId = localStorage.getItem('userId') || undefined;
+        const joinData = await joinSessionMutation.mutateAsync({
+          sessionId: gameState.rematchSessionId,
+          playerName: playerName || 'Игрок',
+          userId
+        });
+        router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
+      } catch (err: any) {
+        setMessage('Ошибка присоединения к реваншу: ' + err.message);
+      }
       return;
     }
     
-    console.log('[handleJoinRematch] Присоединяюсь к реваншу:', gameState.rematchSessionId);
-    console.log('[handleJoinRematch] onTimeLimit:', onTimeLimit);
-    try {
-      const userId = localStorage.getItem('userId') || undefined;
-      const joinData = await joinSessionMutation.mutateAsync({
-        sessionId: gameState.rematchSessionId,
-        playerName: playerName || 'Игрок',
-        userId
-      });
-      router.push(`/game/${gameState.rematchSessionId}?playerId=${joinData.playerId}&name=${encodeURIComponent(playerName)}&color=${encodeURIComponent(joinData.color)}&onTimeLimit=${onTimeLimit}`);
-    } catch (err: any) {
-      setMessage('Ошибка присоединения к реваншу: ' + err.message);
-    }
+    // Если rematchSessionId нет - создаём реванш
+    console.log('[handleJoinRematch] Создаю реванш...');
+    rematchMutation.mutate({ sessionId, playerId });
   };
 
   // Удаление игрока
@@ -552,17 +559,22 @@ export default function GamePage({ params }: { params: Promise<{ sessionId: stri
         </div>
 
         {/* Баннер реванша */}
-        {showRematchBanner && gameState?.rematchSessionId && (
+        {isGameFinished && (
           <div className="mb-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/50 text-emerald-200 px-8 py-5 rounded-2xl text-center animate-fade-in backdrop-blur-sm">
-            <div className="text-xl font-bold mb-3">🔄 Создан реванш!</div>
-            <div className="text-sm mb-3">
-              Хост создал новую игру. ID: <code className="bg-white/10 px-3 py-1 rounded font-mono">{gameState.rematchSessionId}</code>
+            <div className="text-xl font-bold mb-3">
+              {gameState?.rematchSessionId ? '🔄 Создан реванш!' : '🎮 Игра окончена!'}
             </div>
+            {gameState?.rematchSessionId && (
+              <div className="text-sm mb-3">
+                Хост создал новую игру. ID: <code className="bg-white/10 px-3 py-1 rounded font-mono">{gameState.rematchSessionId}</code>
+              </div>
+            )}
             <button
               onClick={handleJoinRematch}
-              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/30"
+              disabled={rematchMutation.isPending}
+              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50"
             >
-              🚀 Присоединиться
+              {rematchMutation.isPending ? '⏳ Создание...' : '🚀 Присоединиться'}
             </button>
           </div>
         )}
